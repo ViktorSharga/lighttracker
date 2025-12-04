@@ -55,6 +55,9 @@ function parseAllSchedules(text) {
   return schedules;
 }
 
+// All possible groups
+const ALL_GROUPS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2'];
+
 /**
  * Parse a single schedule section
  */
@@ -72,7 +75,16 @@ function parseSingleSchedule(text, scheduleDate) {
     result.infoTimestamp = `${infoTimestampMatch[1]} ${infoTimestampMatch[2]}`;
   }
 
-  // Extract groups: "Група X.Y. Електроенергії немає з HH:MM до HH:MM, з HH:MM до HH:MM."
+  // Initialize all groups with no outages
+  for (const groupId of ALL_GROUPS) {
+    result.groups[groupId] = {
+      intervalsText: '',
+      intervals: [],
+      totalMinutesOff: 0
+    };
+  }
+
+  // Extract groups with outages: "Група X.Y. Електроенергії немає з HH:MM до HH:MM, з HH:MM до HH:MM."
   const groupPattern = /Група (\d+\.\d+)\.\s*Електроенергії немає\s+(.+?)(?=Група|\n\n|$)/g;
   let match;
 

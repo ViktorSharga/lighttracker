@@ -213,6 +213,11 @@
       margin: 0.15rem 0.25rem 0.15rem 0;
     }
 
+    .no-outages {
+      color: var(--accent-green);
+      font-size: 0.85rem;
+    }
+
     .previous-schedule {
       font-size: 0.75rem;
       color: var(--text-secondary);
@@ -776,13 +781,16 @@
           badgeHtml = `<span class="change-badge ${status}">${badgeText}</span>`;
         }
 
-        const intervals = group.intervals.map(i =>
-          `<span class="interval-item">${i.start}-${i.end}</span>`
-        ).join('');
+        const hasOutages = group.intervals && group.intervals.length > 0;
+        const intervals = hasOutages
+          ? group.intervals.map(i => `<span class="interval-item">${i.start}-${i.end}</span>`).join('')
+          : '<span class="no-outages">✅ Без відключень</span>';
 
         const hours = Math.floor(group.totalMinutesOff / 60);
         const mins = group.totalMinutesOff % 60;
-        const totalTime = hours > 0 ? `${hours}г ${mins}хв` : `${mins}хв`;
+        const totalTime = group.totalMinutesOff > 0
+          ? (hours > 0 ? `${hours}г ${mins}хв` : `${mins}хв`)
+          : '0';
 
         card.innerHTML = `
           <div class="group-header">
@@ -792,7 +800,7 @@
           </div>
           <div class="interval-list">${intervals}</div>
           ${hasChange && change.previousIntervals !== change.currentIntervals ?
-            `<div class="previous-schedule">Було: ${change.previousIntervals}</div>` : ''}
+            `<div class="previous-schedule">Було: ${change.previousIntervals || 'без відключень'}</div>` : ''}
         `;
 
         groupsList.appendChild(card);

@@ -57,10 +57,13 @@ function formatGroupSchedule(group, groupData) {
  * Format change notification for a group
  */
 function formatChangeNotification(group, prevData, currData, infoTimestamp, isNewDay, scheduleDate) {
-  const intervals = currData.intervals.map(i => `${i.start} - ${i.end}`).join(', ');
+  const hasOutages = currData.intervals && currData.intervals.length > 0;
+  const intervals = hasOutages ? currData.intervals.map(i => `${i.start} - ${i.end}`).join(', ') : 'немає';
   const hours = Math.floor(currData.totalMinutesOff / 60);
   const mins = currData.totalMinutesOff % 60;
-  const totalTime = hours > 0 ? `${hours} год ${mins} хв` : `${mins} хв`;
+  const totalTime = currData.totalMinutesOff > 0
+    ? (hours > 0 ? `${hours} год ${mins} хв` : `${mins} хв`)
+    : '0';
 
   let message = '';
 
@@ -69,8 +72,12 @@ function formatChangeNotification(group, prevData, currData, infoTimestamp, isNe
     message = `📅 *Графік на ${scheduleDate}*\n`;
     message += `Станом на: ${infoTimestamp}\n\n`;
     message += `⚡ *Група ${group}*\n`;
-    message += `Відключення: ${intervals}\n`;
-    message += `Всього без світла: ${totalTime}`;
+    if (hasOutages) {
+      message += `Відключення: ${intervals}\n`;
+      message += `Всього без світла: ${totalTime}`;
+    } else {
+      message += `✅ Відключень не заплановано!`;
+    }
   } else {
     // Update for existing day
     const prevMinutes = prevData?.totalMinutesOff || 0;
@@ -93,15 +100,21 @@ function formatChangeNotification(group, prevData, currData, infoTimestamp, isNe
     message = `📢 *Оновлення графіка*\n`;
     message += `Станом на: ${infoTimestamp}\n\n`;
     message += `⚡ *Група ${group}*\n`;
-    message += `Відключення: ${intervals}\n`;
-    message += `Всього: ${totalTime}`;
+
+    if (hasOutages) {
+      message += `Відключення: ${intervals}\n`;
+      message += `Всього: ${totalTime}`;
+    } else {
+      message += `✅ Відключень не заплановано!`;
+    }
 
     if (changeText) {
       message += `\n\n${changeText}`;
     }
 
     if (prevData && prevData.intervalsText !== currData.intervalsText) {
-      message += `\n\n_Було: ${prevData.intervalsText}_`;
+      const prevText = prevData.intervalsText || 'немає';
+      message += `\n\n_Було: ${prevText}_`;
     }
   }
 
