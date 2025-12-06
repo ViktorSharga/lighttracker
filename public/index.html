@@ -1848,17 +1848,21 @@
         document.getElementById('statsWorstDay').textContent = `${d}.${m}`;
       }
 
-      // Initialize comparison date selectors with same values as chart if not already set
+      // Initialize comparison date selectors with the actual data range
       const compFromDate = document.getElementById('comparisonFromDate');
       const compToDate = document.getElementById('comparisonToDate');
-      const chartFromDate = document.getElementById('statsFromDate').value;
-      const chartToDate = document.getElementById('statsToDate').value;
 
-      if (!compFromDate.value && chartFromDate) {
-        compFromDate.value = chartFromDate;
-      }
-      if (!compToDate.value && chartToDate) {
-        compToDate.value = chartToDate;
+      // Set comparison date pickers to match the data range from dailyStats
+      if (dailyStats.length > 0) {
+        const firstDate = dailyStats[0].date;
+        const lastDate = dailyStats[dailyStats.length - 1].date;
+
+        if (!compFromDate.value) {
+          compFromDate.value = firstDate;
+        }
+        if (!compToDate.value) {
+          compToDate.value = lastDate;
+        }
       }
 
       // Render chart
@@ -2002,13 +2006,14 @@
       const fromDate = document.getElementById('comparisonFromDate').value;
       const toDate = document.getElementById('comparisonToDate').value;
 
-      try {
-        let url = '/api/statistics';
-        const params = [];
-        if (fromDate) params.push(`from=${fromDate}`);
-        if (toDate) params.push(`to=${toDate}`);
-        if (params.length > 0) url += '?' + params.join('&');
+      // Require both dates to be set
+      if (!fromDate || !toDate) {
+        showToast('Оберіть період для порівняння');
+        return;
+      }
 
+      try {
+        const url = `/api/statistics?from=${fromDate}&to=${toDate}`;
         const res = await fetch(url);
         comparisonData = await res.json();
 
