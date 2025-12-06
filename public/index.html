@@ -11,7 +11,7 @@
       --bg-dark: #1a1a2e;
       --bg-card: #16213e;
       --text-primary: #e8e8e8;
-      --text-secondary: #a0a0a0;
+      --text-secondary: #b8b8b8;
       --accent-red: #e74c3c;
       --accent-green: #2ecc71;
       --accent-yellow: #f39c12;
@@ -91,7 +91,7 @@
 
     .nav-tabs-custom .nav-link:hover {
       color: var(--text-primary);
-      border-color: transparent;
+      border-bottom-color: rgba(52, 152, 219, 0.5);
     }
 
     .nav-tabs-custom .nav-link.active {
@@ -101,17 +101,30 @@
     }
 
     .summary-card {
-      background: var(--bg-card);
+      background: linear-gradient(135deg, rgba(52, 152, 219, 0.08) 0%, var(--bg-card) 100%);
       border-radius: 12px;
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid rgba(52, 152, 219, 0.2);
+      position: relative;
+    }
+
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, var(--accent-blue), rgba(52, 152, 219, 0.3));
+      border-radius: 12px 0 0 12px;
     }
 
     .summary-title {
       font-size: 1.1rem;
-      color: var(--text-secondary);
+      color: var(--accent-blue);
       margin-bottom: 1rem;
+      font-weight: 500;
     }
 
     .summary-value {
@@ -231,32 +244,44 @@
       background: var(--bg-card);
       border: 1px solid rgba(255,255,255,0.2);
       color: var(--text-primary);
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1rem;
       border-radius: 6px;
       font-size: 0.9rem;
+      min-height: 44px;
     }
 
     .date-selector:focus {
       outline: none;
       border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
     }
 
     .btn-fetch {
       background: var(--accent-blue);
       border: none;
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1rem;
       border-radius: 6px;
       color: white;
       font-weight: 500;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      cursor: pointer;
+      min-height: 44px;
     }
 
-    .btn-fetch:hover {
+    .btn-fetch:hover:not(:disabled) {
       background: #2980b9;
+      transform: translateY(-1px);
+    }
+
+    .btn-fetch:active:not(:disabled) {
+      transform: translateY(0);
     }
 
     .btn-fetch:disabled {
-      background: var(--text-secondary);
+      background: #555;
+      color: #888;
+      cursor: not-allowed;
+      opacity: 0.7;
     }
 
     .loading {
@@ -385,13 +410,14 @@
     .history-group-item {
       background: var(--bg-card);
       border-radius: 6px;
-      padding: 0.6rem 0.8rem;
+      padding: 0.75rem 1rem;
       border: 1px solid rgba(255,255,255,0.05);
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      min-height: 44px;
     }
 
     .history-group-item:hover {
@@ -445,6 +471,361 @@
     .tab-content.active {
       display: block;
     }
+
+    /* Table hover states */
+    #groupComparisonBody tr {
+      transition: background 0.15s;
+    }
+
+    #groupComparisonBody tr:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* My Group highlight */
+    .my-group {
+      border: 2px solid var(--accent-blue) !important;
+      box-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
+    }
+
+    .my-group-row {
+      background: rgba(52, 152, 219, 0.15) !important;
+    }
+
+    /* Group selector in header */
+    .group-selector {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--text-primary);
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    .group-selector:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+
+    /* 24-hour timeline */
+    .timeline-container {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .timeline-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      padding: 2px 0;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+
+    .timeline-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .timeline-row.my-group {
+      background: rgba(52, 152, 219, 0.15);
+    }
+
+    .timeline-row.my-group .timeline-label {
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    .timeline-row.my-group .timeline-bar {
+      box-shadow: 0 0 0 2px var(--accent-blue);
+    }
+
+    .timeline-label {
+      width: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .timeline-bar {
+      flex: 1;
+      height: 20px;
+      display: flex;
+      background: rgba(46, 204, 113, 0.3);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .timeline-segment {
+      height: 100%;
+    }
+
+    .timeline-segment.outage {
+      background: var(--accent-red);
+    }
+
+    .timeline-segment.power {
+      background: rgba(46, 204, 113, 0.3);
+    }
+
+    .timeline-axis {
+      display: flex;
+      margin-left: 40px;
+      margin-top: 0.5rem;
+    }
+
+    .timeline-axis span {
+      flex: 1;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .timeline-axis span:first-child {
+      text-align: left;
+    }
+
+    .timeline-axis span:last-child {
+      text-align: right;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--accent-blue);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      z-index: 1000;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Countdown alert */
+    .countdown-alert {
+      background: linear-gradient(135deg, rgba(231, 76, 60, 0.15) 0%, rgba(243, 156, 18, 0.1) 100%);
+      border: 1px solid var(--accent-yellow);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .countdown-alert.urgent {
+      border-color: var(--accent-red);
+      background: linear-gradient(135deg, rgba(231, 76, 60, 0.2) 0%, rgba(231, 76, 60, 0.1) 100%);
+      animation: urgentPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes urgentPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+
+    .countdown-time {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-yellow);
+    }
+
+    .countdown-alert.urgent .countdown-time {
+      color: var(--accent-red);
+    }
+
+    .countdown-info {
+      flex: 1;
+    }
+
+    .countdown-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .countdown-detail {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+    }
+
+    /* Collapsible sections */
+    .section-toggle {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      margin-left: 0.5rem;
+      transition: color 0.2s;
+    }
+
+    .section-toggle:hover {
+      color: var(--text-primary);
+    }
+
+    .collapsible {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    .collapsible.collapsed {
+      max-height: 0 !important;
+      opacity: 0;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .header {
+        padding: 1rem;
+      }
+
+      .header h1 {
+        font-size: 1.25rem;
+      }
+
+      .header .d-flex.gap-3 {
+        gap: 0.5rem !important;
+      }
+
+      .status-bar {
+        padding: 0.5rem 1rem;
+        gap: 0.75rem;
+        font-size: 0.8rem;
+      }
+
+      .nav-tabs-custom {
+        padding: 0 0.5rem;
+      }
+
+      .nav-tabs-custom .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+      }
+
+      .container.py-4 {
+        padding: 1rem !important;
+      }
+
+      .groups-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .history-groups-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      }
+
+      .timeline-label {
+        width: 32px;
+        font-size: 0.7rem;
+      }
+
+      .timeline-axis {
+        margin-left: 32px;
+        font-size: 0.65rem;
+      }
+
+      .summary-card {
+        padding: 1rem;
+      }
+
+      .summary-value {
+        font-size: 1.5rem;
+      }
+
+      .countdown-alert {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch !important;
+      }
+
+      .header .d-flex.align-items-center.gap-3 {
+        justify-content: space-between;
+      }
+
+      .group-selector,
+      .btn-fetch {
+        flex: 1;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+      }
+
+      .stat-item {
+        padding: 0.75rem;
+      }
+
+      .stat-value {
+        font-size: 1.25rem;
+      }
+
+      .stat-label {
+        font-size: 0.7rem;
+      }
+
+      .history-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .history-controls .date-selector {
+        width: 100%;
+      }
+
+      /* Stats tab date controls */
+      .summary-card .d-flex.gap-2 {
+        flex-wrap: wrap;
+      }
+
+      .summary-card .date-selector {
+        flex: 1;
+        min-width: 100px;
+      }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .status-dot,
+      .countdown-alert.urgent {
+        animation: none;
+      }
+
+      .group-card,
+      .collapsible,
+      .toast,
+      .nav-tabs-custom .nav-link,
+      .timeline-row {
+        transition: none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -455,9 +836,26 @@
           LightTracker
           <span class="version-badge" id="version">v0.0.0</span>
         </h1>
-        <button class="btn-fetch" id="fetchBtn" onclick="forceFetch()">
-          Оновити зараз
-        </button>
+        <div class="d-flex align-items-center gap-3">
+          <select id="myGroupSelect" class="group-selector" onchange="setMyGroup(this.value)">
+            <option value="">Моя група</option>
+            <option value="1.1">1.1</option>
+            <option value="1.2">1.2</option>
+            <option value="2.1">2.1</option>
+            <option value="2.2">2.2</option>
+            <option value="3.1">3.1</option>
+            <option value="3.2">3.2</option>
+            <option value="4.1">4.1</option>
+            <option value="4.2">4.2</option>
+            <option value="5.1">5.1</option>
+            <option value="5.2">5.2</option>
+            <option value="6.1">6.1</option>
+            <option value="6.2">6.2</option>
+          </select>
+          <button class="btn-fetch" id="fetchBtn" onclick="forceFetch()">
+            Оновити зараз
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -499,9 +897,18 @@
     <!-- Current Tab -->
     <div id="currentTab" class="tab-content active">
       <div id="content" style="display: none;">
+        <!-- Countdown to next outage -->
+        <div id="countdownAlert" class="countdown-alert" style="display: none;">
+          <div class="countdown-time" id="countdownTime">--:--</div>
+          <div class="countdown-info">
+            <div class="countdown-label" id="countdownLabel">До відключення</div>
+            <div class="countdown-detail" id="countdownDetail">--:-- - --:--</div>
+          </div>
+        </div>
+
         <div class="mb-3">
           <div id="futureDateBadge" class="future-date-badge" style="display: none;">
-            📅 Графік на завтра
+            Графік на завтра
           </div>
           <h2 class="h5" id="scheduleTitle">Графік на -</h2>
           <p class="text-secondary mb-0" id="scheduleInfo">-</p>
@@ -529,6 +936,24 @@
           <div class="stat-item">
             <div class="stat-value" id="statImpact">0%</div>
             <div class="stat-label">Вплив на мережу</div>
+          </div>
+        </div>
+
+        <!-- 24-hour Timeline -->
+        <div class="d-flex align-items-center mb-3">
+          <h3 class="h5 mb-0">Огляд на 24 години</h3>
+          <button class="section-toggle" id="toggleTimeline" onclick="toggleSection('timeline')">▼</button>
+        </div>
+        <div class="collapsible" id="timelineSection">
+          <div class="timeline-container" id="timelineContainer">
+            <div id="timelineRows"></div>
+            <div class="timeline-axis">
+              <span>00:00</span>
+              <span>06:00</span>
+              <span>12:00</span>
+              <span>18:00</span>
+              <span>24:00</span>
+            </div>
           </div>
         </div>
 
@@ -678,6 +1103,205 @@
     let statisticsData = null;
     let statsChart = null;
     let chartType = 'percent'; // 'percent' or 'hours'
+    let myGroup = localStorage.getItem('myGroup') || '';
+
+    // Initialize My Group selector
+    function initMyGroup() {
+      const select = document.getElementById('myGroupSelect');
+      if (myGroup) {
+        select.value = myGroup;
+      }
+    }
+
+    function setMyGroup(groupId) {
+      myGroup = groupId;
+      if (groupId) {
+        localStorage.setItem('myGroup', groupId);
+        showToast(`Обрано групу ${groupId}`);
+      } else {
+        localStorage.removeItem('myGroup');
+        showToast('Групу скасовано');
+      }
+      // Re-render current view to apply highlighting
+      if (currentTab === 'current') {
+        loadSchedule();
+      } else if (currentTab === 'history') {
+        renderHistory();
+      } else if (currentTab === 'statistics') {
+        renderGroupComparison();
+      }
+      // Update countdown for new group
+      updateCountdown();
+    }
+
+    function isMyGroup(groupId) {
+      return myGroup && groupId === myGroup;
+    }
+
+    // Toast notification
+    function showToast(message, duration = 2500) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, duration);
+    }
+
+    // Collapsible sections
+    const sectionStates = JSON.parse(localStorage.getItem('sectionStates') || '{}');
+
+    function toggleSection(sectionId) {
+      const section = document.getElementById(sectionId + 'Section');
+      const toggle = document.getElementById('toggle' + sectionId.charAt(0).toUpperCase() + sectionId.slice(1));
+
+      if (section.classList.contains('collapsed')) {
+        section.classList.remove('collapsed');
+        section.style.maxHeight = section.scrollHeight + 'px';
+        toggle.textContent = '▼';
+        sectionStates[sectionId] = 'expanded';
+      } else {
+        section.classList.add('collapsed');
+        toggle.textContent = '▶';
+        sectionStates[sectionId] = 'collapsed';
+      }
+      localStorage.setItem('sectionStates', JSON.stringify(sectionStates));
+    }
+
+    function initCollapsibleSections() {
+      // Restore section states from localStorage
+      Object.keys(sectionStates).forEach(sectionId => {
+        if (sectionStates[sectionId] === 'collapsed') {
+          const section = document.getElementById(sectionId + 'Section');
+          const toggle = document.getElementById('toggle' + sectionId.charAt(0).toUpperCase() + sectionId.slice(1));
+          if (section && toggle) {
+            section.classList.add('collapsed');
+            toggle.textContent = '▶';
+          }
+        }
+      });
+    }
+
+    // Countdown to next outage
+    let currentScheduleData = null;
+
+    function updateCountdown() {
+      if (!currentScheduleData || !currentScheduleData.current) return;
+
+      const now = new Date();
+      const groups = currentScheduleData.current.groups;
+
+      // Find next outage for my group, or any group if none selected
+      let targetGroup = myGroup || Object.keys(groups)[0];
+      if (!targetGroup || !groups[targetGroup]) return;
+
+      const group = groups[targetGroup];
+      const intervals = group.intervals || [];
+
+      if (intervals.length === 0) {
+        document.getElementById('countdownAlert').style.display = 'none';
+        return;
+      }
+
+      // Check if schedule is for today
+      const scheduleDate = currentScheduleData.current.scheduleDate;
+      if (!scheduleDate) return;
+
+      const [sDay, sMonth, sYear] = scheduleDate.split('.');
+      const scheduleDay = new Date(sYear, sMonth - 1, sDay);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      scheduleDay.setHours(0, 0, 0, 0);
+
+      // Only show countdown if schedule is for today
+      if (scheduleDay.getTime() !== today.getTime()) {
+        document.getElementById('countdownAlert').style.display = 'none';
+        return;
+      }
+
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTotalMinutes = currentHour * 60 + currentMinute;
+
+      // Find next outage or current outage
+      let nextOutage = null;
+      let isCurrentlyInOutage = false;
+
+      for (const interval of intervals) {
+        const [startH, startM] = interval.start.split(':').map(Number);
+        const [endH, endM] = interval.end.split(':').map(Number);
+        const startMin = startH * 60 + startM;
+        const endMin = endH * 60 + endM;
+
+        if (currentTotalMinutes >= startMin && currentTotalMinutes < endMin) {
+          // Currently in outage
+          nextOutage = interval;
+          isCurrentlyInOutage = true;
+          break;
+        } else if (startMin > currentTotalMinutes) {
+          // Upcoming outage
+          nextOutage = interval;
+          break;
+        }
+      }
+
+      const alert = document.getElementById('countdownAlert');
+
+      if (!nextOutage) {
+        alert.style.display = 'none';
+        return;
+      }
+
+      const [startH, startM] = nextOutage.start.split(':').map(Number);
+      const [endH, endM] = nextOutage.end.split(':').map(Number);
+      const startMin = startH * 60 + startM;
+      const endMin = endH * 60 + endM;
+
+      let minutesUntil;
+      let labelText;
+
+      if (isCurrentlyInOutage) {
+        minutesUntil = endMin - currentTotalMinutes;
+        labelText = `Світло повернеться через (група ${targetGroup})`;
+        alert.classList.remove('urgent');
+      } else {
+        minutesUntil = startMin - currentTotalMinutes;
+        labelText = `До відключення (група ${targetGroup})`;
+        alert.classList.toggle('urgent', minutesUntil <= 30);
+      }
+
+      const hours = Math.floor(minutesUntil / 60);
+      const mins = minutesUntil % 60;
+      const timeText = hours > 0 ? `${hours}г ${mins}хв` : `${mins}хв`;
+
+      document.getElementById('countdownTime').textContent = timeText;
+      document.getElementById('countdownLabel').textContent = labelText;
+      document.getElementById('countdownDetail').textContent = `${nextOutage.start} - ${nextOutage.end}`;
+      alert.style.display = 'flex';
+    }
+
+    function navigateToGroupHistory(groupId) {
+      // Switch to history tab
+      currentTab = 'history';
+      document.querySelectorAll('.nav-tabs-custom .nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.textContent.includes('Історія')) {
+          link.classList.add('active');
+        }
+      });
+      document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.remove('active');
+      });
+      document.getElementById('historyTab').classList.add('active');
+
+      // Load history and select the group
+      selectedGroup = groupId;
+      loadDates().then(() => {
+        if (historyData) {
+          showGroupHistory(groupId);
+        }
+      });
+    }
 
     function switchTab(tab, event) {
       if (event) event.preventDefault();
@@ -720,7 +1344,9 @@
           return;
         }
 
+        currentScheduleData = data;
         renderSchedule(data);
+        updateCountdown();
         document.getElementById('loading').style.display = 'none';
         document.getElementById('content').style.display = 'block';
         document.getElementById('noData').style.display = 'none';
@@ -820,12 +1446,8 @@
       } else if (comparison) {
         summaryValue.textContent = 'Без змін';
         summaryValue.className = 'summary-value neutral';
-        summaryDetails.textContent = 'Графік не змінився з попереднього оновлення';
-        document.getElementById('statBetter').textContent = '0';
-        document.getElementById('statWorse').textContent = '0';
-        document.getElementById('statUnchanged').textContent = Object.keys(current.groups).length;
-        document.getElementById('statImpact').textContent = '0%';
-        document.getElementById('statsGrid').style.display = 'grid';
+        summaryDetails.textContent = `Усі ${Object.keys(current.groups).length} груп без змін`;
+        document.getElementById('statsGrid').style.display = 'none';
       } else {
         summaryValue.textContent = 'Перший запис';
         summaryValue.className = 'summary-value neutral';
@@ -850,7 +1472,7 @@
         const status = change?.status || 'unchanged';
         const hasChange = change && change.differenceMinutes !== 0;
 
-        card.className = 'group-card' + (hasChange ? ` has-change ${status}` : '');
+        card.className = 'group-card' + (hasChange ? ` has-change ${status}` : '') + (isMyGroup(groupId) ? ' my-group' : '');
 
         let badgeHtml = '';
         if (hasChange) {
@@ -865,11 +1487,7 @@
           ? group.intervals.map(i => `<span class="interval-item">${i.start}-${i.end}</span>`).join('')
           : '<span class="no-outages">✅ Без відключень</span>';
 
-        const hours = Math.floor(group.totalMinutesOff / 60);
-        const mins = group.totalMinutesOff % 60;
-        const totalTime = group.totalMinutesOff > 0
-          ? (hours > 0 ? `${hours}г ${mins}хв` : `${mins}хв`)
-          : '0';
+        const totalTime = formatDuration(group.totalMinutesOff);
 
         card.innerHTML = `
           <div class="group-header">
@@ -884,6 +1502,9 @@
 
         groupsList.appendChild(card);
       }
+
+      // Render 24-hour timeline
+      renderTimeline(current.groups);
     }
 
     async function loadDates() {
@@ -1000,7 +1621,7 @@
       for (const groupId of sortedGroups) {
         const gs = summary.groupSummaries[groupId];
         const item = document.createElement('div');
-        item.className = 'history-group-item' + (selectedGroup === groupId ? ' selected' : '');
+        item.className = 'history-group-item' + (selectedGroup === groupId ? ' selected' : '') + (isMyGroup(groupId) ? ' my-group' : '');
         item.onclick = () => selectGroup(groupId);
 
         let status = 'unchanged';
@@ -1081,6 +1702,89 @@
       if (h > 0 && m > 0) return `${h} год ${m} хв`;
       if (h > 0) return `${h} год`;
       return `${m} хв`;
+    }
+
+    // Format duration for group cards (compact: "5г", "30хв", "5г 30хв")
+    function formatDuration(totalMinutes) {
+      if (totalMinutes === 0) return '0';
+      const hours = Math.floor(totalMinutes / 60);
+      const mins = totalMinutes % 60;
+      if (hours > 0 && mins > 0) return `${hours}г ${mins}хв`;
+      if (hours > 0) return `${hours}г`;
+      return `${mins}хв`;
+    }
+
+    // Render 24-hour timeline
+    function renderTimeline(groups) {
+      const container = document.getElementById('timelineRows');
+      container.innerHTML = '';
+
+      const sortedGroups = Object.keys(groups).sort((a, b) => {
+        const [aMaj, aMin] = a.split('.').map(Number);
+        const [bMaj, bMin] = b.split('.').map(Number);
+        return aMaj - bMaj || aMin - bMin;
+      });
+
+      for (const groupId of sortedGroups) {
+        const group = groups[groupId];
+        const row = document.createElement('div');
+        row.className = 'timeline-row' + (isMyGroup(groupId) ? ' my-group' : '');
+
+        // Create segments for 24 hours (1440 minutes)
+        const segments = createTimelineSegments(group.intervals || []);
+
+        row.innerHTML = `
+          <span class="timeline-label">${groupId}</span>
+          <div class="timeline-bar">${segments}</div>
+        `;
+
+        container.appendChild(row);
+      }
+    }
+
+    function createTimelineSegments(intervals) {
+      if (!intervals || intervals.length === 0) {
+        // No outages - full green bar
+        return '<div class="timeline-segment power" style="width: 100%"></div>';
+      }
+
+      // Convert intervals to minute-based segments
+      const segments = [];
+      let currentMinute = 0;
+
+      // Sort intervals by start time
+      const sorted = [...intervals].sort((a, b) => {
+        const [aH, aM] = a.start.split(':').map(Number);
+        const [bH, bM] = b.start.split(':').map(Number);
+        return (aH * 60 + aM) - (bH * 60 + bM);
+      });
+
+      for (const interval of sorted) {
+        const [startH, startM] = interval.start.split(':').map(Number);
+        const [endH, endM] = interval.end.split(':').map(Number);
+        const startMin = startH * 60 + startM;
+        const endMin = endH * 60 + endM;
+
+        // Add power segment before outage
+        if (startMin > currentMinute) {
+          const width = ((startMin - currentMinute) / 1440 * 100).toFixed(2);
+          segments.push(`<div class="timeline-segment power" style="width: ${width}%"></div>`);
+        }
+
+        // Add outage segment
+        const outageWidth = ((endMin - startMin) / 1440 * 100).toFixed(2);
+        segments.push(`<div class="timeline-segment outage" style="width: ${outageWidth}%"></div>`);
+
+        currentMinute = endMin;
+      }
+
+      // Add remaining power segment
+      if (currentMinute < 1440) {
+        const width = ((1440 - currentMinute) / 1440 * 100).toFixed(2);
+        segments.push(`<div class="timeline-segment power" style="width: ${width}%"></div>`);
+      }
+
+      return segments.join('');
     }
 
     // Statistics functions
@@ -1280,6 +1984,9 @@
 
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        if (isMyGroup(groupId)) {
+          tr.classList.add('my-group-row');
+        }
 
         // Rank color: green for top 4, yellow for middle, red for bottom 4
         let rankColor = 'var(--text-secondary)';
@@ -1288,7 +1995,11 @@
         else rankColor = 'var(--accent-yellow)';
 
         tr.innerHTML = `
-          <td style="padding: 0.75rem 1rem; font-weight: 500;">${groupId}</td>
+          <td style="padding: 0.75rem 1rem; font-weight: 500;">
+            <a href="#" onclick="navigateToGroupHistory('${groupId}'); return false;" style="color: var(--accent-blue); text-decoration: none;">
+              ${groupId}${isMyGroup(groupId) ? ' ⭐' : ''}
+            </a>
+          </td>
           <td style="padding: 0.75rem 1rem; text-align: right;">${totalHours} год</td>
           <td style="padding: 0.75rem 1rem; text-align: right;">${avgHours} год</td>
           <td style="padding: 0.75rem 1rem; text-align: center; color: ${rankColor}; font-weight: 600;">#${data.rank}</td>
@@ -1318,6 +2029,8 @@
     }
 
     // Initial load
+    initMyGroup();
+    initCollapsibleSections();
     loadSchedule();
 
     // Refresh every 30 seconds
@@ -1325,6 +2038,11 @@
 
     // Update countdown every second
     setInterval(updateNextFetchCountdown, 1000);
+
+    // Update outage countdown every minute
+    setInterval(updateCountdown, 60000);
   </script>
+  <!-- Toast notification -->
+  <div id="toast" class="toast"></div>
 </body>
 </html>
