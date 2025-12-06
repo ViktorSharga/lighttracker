@@ -148,10 +148,16 @@ function getSchedulesForDate(dateKey) {
   return schedules[dateKey] || [];
 }
 
+// Alias for loadSchedules for semantic clarity
+function getAllSchedules() {
+  return loadSchedules();
+}
+
 module.exports = {
   addSchedule,
   getLatestSchedules,
   getAllDates,
   getSchedulesForDate,
-  loadSchedules
+  loadSchedules,
+  getAllSchedules
 };

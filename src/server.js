@@ -3,8 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const { fetchSchedulePage } = require('./fetcher');
 const { parseAllSchedules } = require('./parser');
-const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate } = require('./storage');
-const { compareSchedules, buildDaySummary } = require('./comparator');
+const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate, getAllSchedules } = require('./storage');
+const { compareSchedules, buildDaySummary, calculateStatistics } = require('./comparator');
 const { initTelegramBot, notifySubscribers, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
 
 const app = express();
@@ -87,6 +87,16 @@ app.get('/api/history/:dateKey', (req, res) => {
     summary,
     schedules
   });
+});
+
+// API: Get statistics
+app.get('/api/statistics', (req, res) => {
+  const { from, to } = req.query;
+  const schedulesByDate = getAllSchedules();
+
+  const statistics = calculateStatistics(schedulesByDate, from || null, to || null);
+
+  res.json(statistics);
 });
 
 // API: Force fetch
