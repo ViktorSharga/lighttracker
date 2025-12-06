@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { fetchSchedulePage } = require('./fetcher');
 const { parseAllSchedules } = require('./parser');
-const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate, getAllSchedules } = require('./storage');
+const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate, getAllSchedules, importSchedule, deleteSchedule } = require('./storage');
 const { compareSchedules, buildDaySummary, calculateStatistics } = require('./comparator');
 const { initTelegramBot, notifySubscribers, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
 
@@ -22,6 +22,9 @@ let isFetching = false;
 
 // Initialize Telegram bot
 initTelegramBot(TELEGRAM_BOT_TOKEN, getLatestSchedules);
+
+// Parse JSON bodies
+app.use(express.json());
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -97,6 +100,40 @@ app.get('/api/statistics', (req, res) => {
   const statistics = calculateStatistics(schedulesByDate, from || null, to || null);
 
   res.json(statistics);
+});
+
+// API: Import a single schedule (for historical data)
+app.post('/api/schedule/import', (req, res) => {
+  const record = req.body;
+
+  if (!record || !record.scheduleDate) {
+    return res.status(400).json({ error: 'Invalid schedule record: missing scheduleDate' });
+  }
+
+  const result = importSchedule(record);
+
+  if (result.imported) {
+    res.json(result);
+  } else {
+    res.status(400).json(result);
+  }
+});
+
+// API: Delete a specific schedule
+app.delete('/api/schedule/:dateKey/:fetchedAt', (req, res) => {
+  const { dateKey, fetchedAt } = req.params;
+
+  if (!dateKey || !fetchedAt) {
+    return res.status(400).json({ error: 'Missing dateKey or fetchedAt' });
+  }
+
+  const result = deleteSchedule(dateKey, decodeURIComponent(fetchedAt));
+
+  if (result.deleted) {
+    res.json(result);
+  } else {
+    res.status(404).json(result);
+  }
 });
 
 // API: Force fetch

@@ -153,11 +153,77 @@ function getAllSchedules() {
   return loadSchedules();
 }
 
+/**
+ * Import a schedule record directly (for historical data import)
+ * Unlike addSchedule, this preserves the original fetchedAt timestamp
+ * and doesn't skip duplicates - caller is responsible for data integrity
+ */
+function importSchedule(record) {
+  const schedules = loadSchedules();
+  const dateKey = getDateKey(record.scheduleDate);
+
+  if (!dateKey) {
+    return { imported: false, reason: 'invalid_date' };
+  }
+
+  if (!record.fetchedAt || !record.groups) {
+    return { imported: false, reason: 'missing_required_fields' };
+  }
+
+  if (!schedules[dateKey]) {
+    schedules[dateKey] = [];
+  }
+
+  // Check for exact duplicate (same fetchedAt)
+  const exists = schedules[dateKey].some(s => s.fetchedAt === record.fetchedAt);
+  if (exists) {
+    return { imported: false, reason: 'duplicate', dateKey };
+  }
+
+  schedules[dateKey].push(record);
+
+  // Sort by fetchedAt to maintain chronological order
+  schedules[dateKey].sort((a, b) => new Date(a.fetchedAt) - new Date(b.fetchedAt));
+
+  saveSchedules(schedules);
+
+  return { imported: true, dateKey };
+}
+
+/**
+ * Delete a specific schedule by dateKey and fetchedAt timestamp
+ */
+function deleteSchedule(dateKey, fetchedAt) {
+  const schedules = loadSchedules();
+
+  if (!schedules[dateKey]) {
+    return { deleted: false, reason: 'date_not_found' };
+  }
+
+  const initialLength = schedules[dateKey].length;
+  schedules[dateKey] = schedules[dateKey].filter(s => s.fetchedAt !== fetchedAt);
+
+  if (schedules[dateKey].length === initialLength) {
+    return { deleted: false, reason: 'schedule_not_found' };
+  }
+
+  // Remove empty date keys
+  if (schedules[dateKey].length === 0) {
+    delete schedules[dateKey];
+  }
+
+  saveSchedules(schedules);
+
+  return { deleted: true, dateKey, fetchedAt };
+}
+
 module.exports = {
   addSchedule,
   getLatestSchedules,
   getAllDates,
   getSchedulesForDate,
   loadSchedules,
-  getAllSchedules
+  getAllSchedules,
+  importSchedule,
+  deleteSchedule
 };
