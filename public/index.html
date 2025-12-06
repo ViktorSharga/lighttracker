@@ -1074,14 +1074,23 @@
         </div>
 
         <!-- Group Comparison Table -->
-        <h3 class="h5 mb-3 mt-4">Порівняння груп</h3>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 mt-4">
+          <h3 class="h5 mb-0">Порівняння груп</h3>
+          <div class="d-flex gap-2 align-items-center">
+            <label style="color: var(--text-secondary); font-size: 0.85rem;">Період:</label>
+            <input type="date" id="comparisonFromDate" class="date-selector" style="padding: 0.4rem 0.6rem; font-size: 0.85rem; min-height: 36px;">
+            <span style="color: var(--text-secondary);">—</span>
+            <input type="date" id="comparisonToDate" class="date-selector" style="padding: 0.4rem 0.6rem; font-size: 0.85rem; min-height: 36px;">
+            <button class="btn-fetch" onclick="loadGroupComparison()" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; min-height: 36px;">Застосувати</button>
+          </div>
+        </div>
         <div class="summary-card" style="padding: 0; overflow: hidden;">
           <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
             <thead>
               <tr style="background: rgba(255,255,255,0.05);">
                 <th style="padding: 0.75rem 1rem; text-align: left; font-weight: 500; color: var(--text-secondary);">Група</th>
-                <th style="padding: 0.75rem 1rem; text-align: right; font-weight: 500; color: var(--text-secondary);">Всього</th>
-                <th style="padding: 0.75rem 1rem; text-align: right; font-weight: 500; color: var(--text-secondary);">Середнє/день</th>
+                <th style="padding: 0.75rem 1rem; text-align: right; font-weight: 500; color: var(--text-secondary);" id="thTotal">Всього</th>
+                <th style="padding: 0.75rem 1rem; text-align: right; font-weight: 500; color: var(--text-secondary);" id="thAverage">Середнє/день</th>
                 <th style="padding: 0.75rem 1rem; text-align: center; font-weight: 500; color: var(--text-secondary);">Ранг</th>
               </tr>
             </thead>
@@ -1104,6 +1113,7 @@
     let statsChart = null;
     let chartType = 'percent'; // 'percent' or 'hours'
     let myGroup = localStorage.getItem('myGroup') || '';
+    let comparisonData = null; // Separate data for group comparison table
 
     // Initialize My Group selector
     function initMyGroup() {
@@ -1838,8 +1848,26 @@
         document.getElementById('statsWorstDay').textContent = `${d}.${m}`;
       }
 
+      // Initialize comparison date selectors with same values as chart if not already set
+      const compFromDate = document.getElementById('comparisonFromDate');
+      const compToDate = document.getElementById('comparisonToDate');
+      const chartFromDate = document.getElementById('statsFromDate').value;
+      const chartToDate = document.getElementById('statsToDate').value;
+
+      if (!compFromDate.value && chartFromDate) {
+        compFromDate.value = chartFromDate;
+      }
+      if (!compToDate.value && chartToDate) {
+        compToDate.value = chartToDate;
+      }
+
       // Render chart
       renderStatsChart();
+
+      // Initialize comparisonData with statisticsData if not set
+      if (!comparisonData) {
+        comparisonData = statisticsData;
+      }
 
       // Render group comparison table
       renderGroupComparison();
@@ -1969,10 +1997,42 @@
       }
     }
 
+    // Load group comparison with separate date range
+    async function loadGroupComparison() {
+      const fromDate = document.getElementById('comparisonFromDate').value;
+      const toDate = document.getElementById('comparisonToDate').value;
+
+      try {
+        let url = '/api/statistics';
+        const params = [];
+        if (fromDate) params.push(`from=${fromDate}`);
+        if (toDate) params.push(`to=${toDate}`);
+        if (params.length > 0) url += '?' + params.join('&');
+
+        const res = await fetch(url);
+        comparisonData = await res.json();
+
+        renderGroupComparison();
+      } catch (err) {
+        console.error('Error loading group comparison:', err);
+      }
+    }
+
     function renderGroupComparison() {
-      const { groupComparison } = statisticsData;
+      // Use comparisonData if available, otherwise fall back to statisticsData
+      const data = comparisonData || statisticsData;
+      if (!data) return;
+
+      const { groupComparison, summary } = data;
       const tbody = document.getElementById('groupComparisonBody');
       tbody.innerHTML = '';
+
+      // Check if single day (totalDays === 1)
+      const isSingleDay = summary.totalDays === 1;
+
+      // Update table headers based on whether it's single day or range
+      document.getElementById('thTotal').textContent = isSingleDay ? 'Години без світла' : 'Всього';
+      document.getElementById('thAverage').textContent = isSingleDay ? '% зі світлом' : 'Середнє/день';
 
       // Sort groups by rank (best to worst)
       const sortedGroups = Object.entries(groupComparison)
@@ -1994,14 +2054,25 @@
         else if (data.rank >= 9) rankColor = 'var(--accent-red)';
         else rankColor = 'var(--accent-yellow)';
 
+        // For single day, show hours and percent instead of total/average
+        let col2, col3;
+        if (isSingleDay) {
+          col2 = `${totalHours} год`;
+          const percentWithPower = ((1440 - data.averageMinutes) / 1440 * 100).toFixed(1);
+          col3 = `${percentWithPower}%`;
+        } else {
+          col2 = `${totalHours} год`;
+          col3 = `${avgHours} год`;
+        }
+
         tr.innerHTML = `
           <td style="padding: 0.75rem 1rem; font-weight: 500;">
             <a href="#" onclick="navigateToGroupHistory('${groupId}'); return false;" style="color: var(--accent-blue); text-decoration: none;">
               ${groupId}${isMyGroup(groupId) ? ' ⭐' : ''}
             </a>
           </td>
-          <td style="padding: 0.75rem 1rem; text-align: right;">${totalHours} год</td>
-          <td style="padding: 0.75rem 1rem; text-align: right;">${avgHours} год</td>
+          <td style="padding: 0.75rem 1rem; text-align: right;">${col2}</td>
+          <td style="padding: 0.75rem 1rem; text-align: right;">${col3}</td>
           <td style="padding: 0.75rem 1rem; text-align: center; color: ${rankColor}; font-weight: 600;">#${data.rank}</td>
         `;
 
