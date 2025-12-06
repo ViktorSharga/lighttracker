@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     libxtst6 \
     xdg-utils \
+    dumb-init \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
@@ -45,4 +46,6 @@ RUN mkdir -p /app/data
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+# Use dumb-init to handle signals properly and run node directly
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "src/server.js"]
