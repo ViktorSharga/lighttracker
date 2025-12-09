@@ -6,10 +6,9 @@ services:
       - "3000:3000"
     volumes:
       - ./data:/app/data
-    env_file:
-      - .env
     environment:
       - NODE_ENV=production
       - FETCH_INTERVAL_MS=300000
       - SOURCE_URL=https://poweron.loe.lviv.ua/
+      # - TELEGRAM_BOT_TOKEN=your_token_here
     restart: unless-stopped

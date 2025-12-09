@@ -26,8 +26,9 @@ initTelegramBot(TELEGRAM_BOT_TOKEN, getLatestSchedules);
 // Parse JSON bodies
 app.use(express.json());
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Serve Vue frontend
+const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
+app.use(express.static(frontendDistPath));
 
 // API: Get current schedule and comparison
 app.get('/api/schedule', (req, res) => {
@@ -240,6 +241,14 @@ function startPeriodicFetch() {
 
   console.log(`Periodic fetch scheduled every ${FETCH_INTERVAL_MS / 1000} seconds`);
 }
+
+// SPA fallback - serve index.html for all non-API routes (Vue Router)
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`LightTracker v${VERSION} running on http://localhost:${PORT}`);

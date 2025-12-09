@@ -1,33 +1,29 @@
+# Build frontend
+FROM node:20-slim AS frontend
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# Production
 FROM node:20-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium dumb-init \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies for Puppeteer (minimal set)
-RUN apt-get update && apt-get install -y \
-    chromium \
-    dumb-init \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /var/cache/apt/*
-
-# Set Puppeteer to use installed Chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY src/ ./src/
+COPY VERSION ./
+COPY --from=frontend /app/frontend/dist ./frontend/dist
 
-# Install Node.js dependencies
-RUN npm install --production && npm cache clean --force
-
-# Copy application files
-COPY . .
-
-# Create data directory for persistent storage
 RUN mkdir -p /app/data
-
 EXPOSE 3000
 
-# Use dumb-init to handle signals properly and run node directly
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "src/server.js"]
