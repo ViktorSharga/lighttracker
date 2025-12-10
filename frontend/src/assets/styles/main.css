@@ -54,6 +54,11 @@
 }
 
 /* Base styles */
+html {
+  /* Slightly reduced base font for more compact UI (default is 16px) */
+  font-size: 15px;
+}
+
 html, body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--color-bg-primary);
