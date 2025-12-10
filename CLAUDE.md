@@ -149,6 +149,20 @@ bg-primary: #0f0f1a    bg-secondary: #161625    bg-elevated: #1e1e32
 accent-blue: #5b8def   accent-green: #4ade80    accent-red: #f87171   accent-yellow: #fbbf24
 ```
 
+**Target Devices:**
+
+Design and test UI for these primary devices:
+
+| Device | CSS Viewport | Physical Resolution | DPR | Notes |
+|--------|-------------|---------------------|-----|-------|
+| MacBook Pro 16" M2 | ~1792×1120 | 3456×2234 | 2x | Primary desktop target, 254 PPI |
+| iPhone 15 Pro Max | 430×932 | 1290×2796 | 3x | Primary mobile target |
+| iPad Pro M4 13" | 1032×1376 | 2752×2064 | 2x | Tablet target |
+
+- MacBook 16" typically runs at "Default" scaling (~1792px wide viewport)
+- Mobile-first responsive breakpoints: `sm:640px`, `md:768px`, `lg:1024px`, `xl:1280px`
+- Max content width: `max-w-6xl` (1152px) for optimal reading on large screens
+
 **Known gotchas (previously fixed bugs):**
 - SelectContent needs high z-index (`z-[9999]`) for dropdowns to open over other elements
 - Tab indicator uses GSAP only - CSS `::after` underline removed from TabsTrigger
