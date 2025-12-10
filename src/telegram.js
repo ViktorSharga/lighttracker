@@ -7,6 +7,33 @@ const SUBSCRIBERS_FILE = path.join(process.env.DATA_DIR || path.join(__dirname, 
 // Available groups
 const GROUPS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2'];
 
+/**
+ * Format timestamp to Ukrainian style (HH:MM DD.MM.YYYY)
+ * Handles both ISO format and already-formatted strings
+ */
+function formatTimestamp(timestamp) {
+  if (!timestamp) return '';
+
+  // If already in Ukrainian format (contains space but no T), return as-is
+  if (timestamp.includes(' ') && !timestamp.includes('T')) {
+    return timestamp;
+  }
+
+  // Parse ISO format
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) {
+    return timestamp; // Return original if parsing fails
+  }
+
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  return `${hours}:${minutes} ${day}.${month}.${year}`;
+}
+
 let bot = null;
 let getLatestSchedulesFn = null;
 
@@ -70,7 +97,7 @@ function formatChangeNotification(group, prevData, currData, infoTimestamp, isNe
   if (isNewDay) {
     // New day's schedule - different message format
     message = `📅 *Графік на ${scheduleDate}*\n`;
-    message += `Станом на: ${infoTimestamp}\n\n`;
+    message += `Станом на: ${formatTimestamp(infoTimestamp)}\n\n`;
     message += `⚡ *Група ${group}*\n`;
     if (hasOutages) {
       message += `Відключення: ${intervals}\n`;
@@ -98,7 +125,7 @@ function formatChangeNotification(group, prevData, currData, infoTimestamp, isNe
     }
 
     message = `📢 *Оновлення графіка*\n`;
-    message += `Станом на: ${infoTimestamp}\n\n`;
+    message += `Станом на: ${formatTimestamp(infoTimestamp)}\n\n`;
     message += `⚡ *Група ${group}*\n`;
 
     if (hasOutages) {
@@ -355,7 +382,7 @@ async function sendCurrentSchedule(chatId, group, showKeyboard = false) {
 
   const groupData = current.groups[group];
   let message = `📅 *Графік на ${current.scheduleDate}*\n`;
-  message += `Станом на: ${current.infoTimestamp}\n\n`;
+  message += `Станом на: ${formatTimestamp(current.infoTimestamp)}\n\n`;
   message += formatGroupSchedule(group, groupData);
 
   const options = { parse_mode: 'Markdown' };

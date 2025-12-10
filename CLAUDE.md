@@ -23,7 +23,17 @@ docker compose build --no-cache   # Rebuild from scratch (if caching issues)
 ### Data Management (via Docker)
 
 ```bash
-docker compose exec lighttracker node scripts/import-data.js <base-url> [data-file]
+docker compose exec lighttracker node scripts/import-data.js <base-url> [data-file]  # Import from another instance
+docker compose exec lighttracker node scripts/backup-data.js                          # Backup current data
+docker compose exec lighttracker node scripts/migrate-to-iso.js                       # Migrate timestamps to ISO format
+```
+
+### Frontend Type Checking (via Docker)
+
+```bash
+# Type check runs during Docker build, but to check manually:
+docker compose exec lighttracker sh -c "cd /app/frontend && npm run typecheck"
+docker compose exec lighttracker sh -c "cd /app/frontend && npm run build:check"  # typecheck + build
 ```
 
 ### QA Testing (via Docker)
@@ -227,6 +237,7 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | GET | `/api/statistics?from=&to=` | Multi-day stats with optional date range |
 | GET | `/api/export` | Export all schedules (for data transfer between instances) |
 | GET | `/api/status` | App status, version, Telegram subscriber counts |
+| GET | `/health` | Health check endpoint (returns 200 OK when ready) |
 | POST | `/api/fetch` | Trigger immediate fetch (returns 409 if already fetching) |
 | POST | `/api/schedule/import` | Import single schedule record |
 | DELETE | `/api/schedule/:dateKey/:fetchedAt` | Delete specific schedule version |
