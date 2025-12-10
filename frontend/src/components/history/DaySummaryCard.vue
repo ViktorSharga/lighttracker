@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { Clock, RefreshCw, Activity, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next'
 import { GlassCard } from '@/components/ui'
+import { formatTimeFromISO } from '@/lib/dateUtils'
 import type { HistorySummary } from '@/services/types'
 
 interface Props {
@@ -10,21 +11,13 @@ interface Props {
 
 const props = defineProps<Props>()
 
-// Format time - handles "HH:MM DD.MM.YYYY" format from API
-const formatTime = (timeString: string): string => {
-  if (!timeString) return '--:--'
-  // API returns "HH:MM DD.MM.YYYY" format, extract just the time part
-  const timePart = timeString.split(' ')[0]
-  return timePart || '--:--'
-}
-
-// Formatted times
+// Formatted times (API returns ISO 8601 timestamps)
 const firstUpdateTime = computed(() =>
-  props.summary ? formatTime(props.summary.firstUpdate) : '--:--'
+  formatTimeFromISO(props.summary?.firstUpdate)
 )
 
 const lastUpdateTime = computed(() =>
-  props.summary ? formatTime(props.summary.lastUpdate) : '--:--'
+  formatTimeFromISO(props.summary?.lastUpdate)
 )
 
 // Overall day assessment based on changes

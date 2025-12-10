@@ -69,10 +69,18 @@ function parseSingleSchedule(text, scheduleDate) {
     rawText: text
   };
 
-  // Extract info timestamp: "Інформація станом на 09:14 01.12.2025"
-  const infoTimestampMatch = text.match(/Інформація станом на (\d{2}:\d{2}) (\d{2}\.\d{2}\.\d{4})/);
+  // Extract info timestamp: "Інформація станом на 09:14 01.12.2025" and convert to ISO
+  const infoTimestampMatch = text.match(/Інформація станом на (\d{2}):(\d{2}) (\d{2})\.(\d{2})\.(\d{4})/);
   if (infoTimestampMatch) {
-    result.infoTimestamp = `${infoTimestampMatch[1]} ${infoTimestampMatch[2]}`;
+    const [, hours, minutes, day, month, year] = infoTimestampMatch;
+    const date = new Date(
+      parseInt(year, 10),
+      parseInt(month, 10) - 1,
+      parseInt(day, 10),
+      parseInt(hours, 10),
+      parseInt(minutes, 10)
+    );
+    result.infoTimestamp = date.toISOString();
   }
 
   // Initialize all groups with no outages

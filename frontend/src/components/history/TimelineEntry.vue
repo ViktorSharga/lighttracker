@@ -2,8 +2,8 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { Clock, ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { GlassCard, ChangeBadge } from '@/components/ui'
+import { formatTimeFromISO } from '@/lib/dateUtils'
 import type { ChangeTimelineEntry } from '@/services/types'
-import { cn } from '@/lib/utils'
 import gsap from 'gsap'
 
 interface Props {
@@ -20,10 +20,8 @@ const isExpanded = ref(false)
 const entryRef = ref<HTMLElement | null>(null)
 const detailsRef = ref<HTMLElement | null>(null)
 
-const formattedTime = computed(() => {
-  const date = new Date(props.entry.toTimestamp)
-  return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
-})
+// API returns ISO 8601 timestamps
+const formattedTime = computed(() => formatTimeFromISO(props.entry.toTimestamp))
 
 const isPositiveChange = computed(() => props.entry.summary.totalMinutesChange > 0)
 

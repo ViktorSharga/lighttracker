@@ -18,8 +18,8 @@ export interface GroupData {
 
 export interface Schedule {
   fetchedAt: string;       // ISO 8601 timestamp
-  scheduleDate: string;    // "DD.MM.YYYY" display format
-  infoTimestamp: string;   // "HH:MM DD.MM.YYYY"
+  scheduleDate: string;    // "DD.MM.YYYY" display format (from source)
+  infoTimestamp: string;   // ISO 8601 timestamp
   groups: Record<string, GroupData>;  // "1.1", "1.2", etc.
 }
 
@@ -90,7 +90,7 @@ export interface ScheduleByDateResponse {
 // ============================================
 
 export interface GroupHistoryChange {
-  timestamp: string;
+  timestamp: string;       // ISO 8601 timestamp
   diff: number;
   diffFormatted: string;
   from: string;
@@ -116,16 +116,16 @@ export interface TimelineChangeEntry {
 }
 
 export interface ChangeTimelineEntry {
-  fromTimestamp: string;
-  toTimestamp: string;
+  fromTimestamp: string;   // ISO 8601 timestamp
+  toTimestamp: string;     // ISO 8601 timestamp
   summary: ComparisonSummary;
   groupChanges: Record<string, TimelineChangeEntry>;
 }
 
 export interface HistorySummary {
   updateCount: number;
-  firstUpdate: string;
-  lastUpdate: string;
+  firstUpdate: string;     // ISO 8601 timestamp
+  lastUpdate: string;      // ISO 8601 timestamp
   totalChanges: number;
   changesTimeline: ChangeTimelineEntry[];
   groupSummaries: Record<string, GroupSummary>;
@@ -152,10 +152,10 @@ export interface DailyStats {
 }
 
 export interface RecordStats {
-  fetchedAt: string;      // ISO timestamp
+  fetchedAt: string;      // ISO 8601 timestamp
   date: string;           // YYYY-MM-DD
-  scheduleDate: string;   // DD.MM.YYYY
-  timestamp: string;      // HH:MM DD.MM.YYYY (from source)
+  scheduleDate: string;   // DD.MM.YYYY (display format from source)
+  timestamp: string;      // ISO 8601 timestamp
   averageOutageMinutes: number;
   percentWithPower: number;
   hoursWithPower: number;

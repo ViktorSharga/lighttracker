@@ -26,6 +26,14 @@ docker compose build --no-cache   # Rebuild from scratch (if caching issues)
 docker compose exec lighttracker node scripts/import-data.js <base-url> [data-file]
 ```
 
+### QA Testing (via Docker)
+
+```bash
+docker compose exec lighttracker node scripts/qa-test.js [url]  # Visual/functional tests with screenshots
+```
+
+Output: `screenshots/qa-{timestamp}/` with screenshots for desktop/tablet/mobile viewports and `qa-report.json`.
+
 ## Architecture Overview
 
 ```
