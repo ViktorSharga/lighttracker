@@ -151,6 +151,16 @@ export interface DailyStats {
   hoursWithoutPower: string;
 }
 
+export interface RecordStats {
+  fetchedAt: string;      // ISO timestamp
+  date: string;           // YYYY-MM-DD
+  scheduleDate: string;   // DD.MM.YYYY
+  timestamp: string;      // HH:MM DD.MM.YYYY (from source)
+  averageOutageMinutes: number;
+  percentWithPower: number;
+  hoursWithPower: number;
+}
+
 export interface GroupComparisonData {
   totalMinutes: number;
   averageMinutes: number;
@@ -174,6 +184,7 @@ export interface StatisticsSummary {
 
 export interface StatisticsResponse {
   dailyStats: DailyStats[];
+  allRecords: RecordStats[];
   groupComparison: Record<string, GroupComparisonData>;
   summary: StatisticsSummary;
 }

@@ -214,6 +214,7 @@ function calculateStatistics(schedulesByDate, fromDate = null, toDate = null) {
   if (filteredDates.length === 0) {
     return {
       dailyStats: [],
+      allRecords: [],
       groupComparison: {},
       summary: {
         totalDays: 0,
@@ -270,6 +271,33 @@ function calculateStatistics(schedulesByDate, fromDate = null, toDate = null) {
     });
   }
 
+  // Build allRecords array for granular view (all schedule updates)
+  const allRecords = [];
+  for (const date of filteredDates) {
+    const daySchedules = schedulesByDate[date] || [];
+    for (const schedule of daySchedules) {
+      // Calculate stats for this specific schedule
+      let totalMinutes = 0;
+      for (const groupId of allGroups) {
+        totalMinutes += schedule.groups[groupId]?.totalMinutesOff ?? 0;
+      }
+      const avgMinutes = totalMinutes / 12;
+
+      allRecords.push({
+        fetchedAt: schedule.fetchedAt,
+        date: date,
+        scheduleDate: schedule.scheduleDate,
+        timestamp: schedule.infoTimestamp,
+        averageOutageMinutes: Math.round(avgMinutes),
+        percentWithPower: parseFloat(((1440 - avgMinutes) / 1440 * 100).toFixed(1)),
+        hoursWithPower: parseFloat(((1440 - avgMinutes) / 60).toFixed(1))
+      });
+    }
+  }
+
+  // Sort by fetchedAt ascending
+  allRecords.sort((a, b) => new Date(a.fetchedAt) - new Date(b.fetchedAt));
+
   // Build group comparison
   const groupComparison = {};
   const groupAverages = [];
@@ -313,6 +341,7 @@ function calculateStatistics(schedulesByDate, fromDate = null, toDate = null) {
 
   return {
     dailyStats,
+    allRecords,
     groupComparison,
     summary: {
       totalDays: dailyStats.length,

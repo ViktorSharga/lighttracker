@@ -69,11 +69,43 @@ const formatDateForInput = (date: Date): string => {
 // Active chart type classes
 const isPercentActive = computed(() => statisticsStore.chartType === 'percent')
 const isHoursActive = computed(() => statisticsStore.chartType === 'hours')
+
+// View mode toggle
+const toggleViewMode = (mode: 'daily' | 'records') => {
+  statisticsStore.setChartViewMode(mode)
+}
+
+// Active view mode classes
+const isDailyActive = computed(() => statisticsStore.chartViewMode === 'daily')
+const isRecordsActive = computed(() => statisticsStore.chartViewMode === 'records')
 </script>
 
 <template>
   <GlassCard variant="default" class="p-4">
     <div class="space-y-4">
+      <!-- View Mode Toggle -->
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+        <span class="text-sm font-medium text-gray-300">Деталізація:</span>
+        <div class="flex gap-2">
+          <Button
+            :variant="isDailyActive ? 'secondary' : 'outline'"
+            size="sm"
+            @click="toggleViewMode('daily')"
+            :class="isDailyActive ? 'border-accent-blue/50 bg-accent-blue/20' : ''"
+          >
+            По днях
+          </Button>
+          <Button
+            :variant="isRecordsActive ? 'secondary' : 'outline'"
+            size="sm"
+            @click="toggleViewMode('records')"
+            :class="isRecordsActive ? 'border-accent-blue/50 bg-accent-blue/20' : ''"
+          >
+            По оновленнях
+          </Button>
+        </div>
+      </div>
+
       <!-- Chart Type Toggle -->
       <div class="flex flex-col sm:flex-row sm:items-center gap-3">
         <span class="text-sm font-medium text-gray-300">Відобразити:</span>

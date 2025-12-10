@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/services/api'
-import type { StatisticsResponse, ChartType, GroupComparisonData } from '@/services/types'
+import type { StatisticsResponse, ChartType, GroupComparisonData, RecordStats } from '@/services/types'
+
+export type ChartViewMode = 'daily' | 'records'
 
 export const useStatisticsStore = defineStore('statistics', () => {
   // State
@@ -12,6 +14,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
   const comparisonDateFrom = ref<string | null>(null)
   const comparisonDateTo = ref<string | null>(null)
   const chartType = ref<ChartType>('percent')
+  const chartViewMode = ref<ChartViewMode>('daily')
   const isLoading = ref(false)
 
   // Getters
@@ -28,6 +31,17 @@ export const useStatisticsStore = defineStore('statistics', () => {
     return statistics.value?.summary ?? null
   })
 
+  // Helper for record label formatting
+  const formatRecordLabel = (record: RecordStats): string => {
+    const date = new Date(record.fetchedAt)
+    return date.toLocaleString('uk-UA', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit'
+    })
+  }
+
   const chartData = computed(() => {
     if (!statistics.value) {
       return {
@@ -36,44 +50,46 @@ export const useStatisticsStore = defineStore('statistics', () => {
       }
     }
 
-    const stats = statistics.value.dailyStats
+    // Select data source based on view mode
+    const isRecordsView = chartViewMode.value === 'records'
+    let sourceData: (typeof statistics.value.dailyStats[0] | RecordStats)[] = isRecordsView
+      ? statistics.value.allRecords
+      : statistics.value.dailyStats
 
-    // Filter by chart date range if specified
-    let filteredStats = stats
+    // Apply date filtering
     if (chartDateFrom.value || chartDateTo.value) {
-      filteredStats = stats.filter(stat => {
-        if (chartDateFrom.value && stat.date < chartDateFrom.value) return false
-        if (chartDateTo.value && stat.date > chartDateTo.value) return false
+      sourceData = sourceData.filter(item => {
+        if (chartDateFrom.value && item.date < chartDateFrom.value) return false
+        if (chartDateTo.value && item.date > chartDateTo.value) return false
         return true
       })
     }
 
-    const labels = filteredStats.map(stat => stat.scheduleDate)
+    // Format labels (records view shows time + date, daily shows date only)
+    const labels = isRecordsView
+      ? (sourceData as RecordStats[]).map(r => formatRecordLabel(r))
+      : sourceData.map(s => s.scheduleDate)
 
-    if (chartType.value === 'percent') {
-      return {
-        labels,
-        datasets: [{
-          label: 'Світла буде (%)',
-          data: filteredStats.map(stat => stat.percentWithPower),
-          backgroundColor: 'rgba(75, 192, 192, 0.6)',
-          borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 2,
-          tension: 0.1
-        }]
-      }
-    } else {
-      return {
-        labels,
-        datasets: [{
-          label: 'Години зі світлом',
-          data: filteredStats.map(stat => stat.hoursWithPower),
-          backgroundColor: 'rgba(54, 162, 235, 0.6)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 2,
-          tension: 0.1
-        }]
-      }
+    // Select data values based on chart type
+    const dataValues = chartType.value === 'percent'
+      ? sourceData.map(s => s.percentWithPower)
+      : sourceData.map(s => s.hoursWithPower)
+
+    const chartLabel = chartType.value === 'percent' ? 'Світла буде (%)' : 'Години зі світлом'
+    const colors = chartType.value === 'percent'
+      ? { bg: 'rgba(75, 192, 192, 0.6)', border: 'rgba(75, 192, 192, 1)' }
+      : { bg: 'rgba(54, 162, 235, 0.6)', border: 'rgba(54, 162, 235, 1)' }
+
+    return {
+      labels,
+      datasets: [{
+        label: chartLabel,
+        data: dataValues,
+        backgroundColor: colors.bg,
+        borderColor: colors.border,
+        borderWidth: 2,
+        tension: 0.1
+      }]
     }
   })
 
@@ -119,6 +135,10 @@ export const useStatisticsStore = defineStore('statistics', () => {
     chartType.value = type
   }
 
+  const setChartViewMode = (mode: ChartViewMode) => {
+    chartViewMode.value = mode
+  }
+
   return {
     // State
     statistics,
@@ -128,6 +148,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
     comparisonDateFrom,
     comparisonDateTo,
     chartType,
+    chartViewMode,
     isLoading,
     // Getters
     dailyStats,
@@ -138,6 +159,7 @@ export const useStatisticsStore = defineStore('statistics', () => {
     fetchStatistics,
     setChartDateRange,
     setComparisonDateRange,
-    setChartType
+    setChartType,
+    setChartViewMode
   }
 })

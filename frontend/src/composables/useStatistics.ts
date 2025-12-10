@@ -1,6 +1,6 @@
 import { computed, reactive } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useStatisticsStore } from '@/stores/statisticsStore'
+import { useStatisticsStore, type ChartViewMode } from '@/stores/statisticsStore'
 import type { ChartType } from '@/services/types'
 
 /**
@@ -16,6 +16,7 @@ export function useStatistics() {
     comparisonDateFrom,
     comparisonDateTo,
     chartType,
+    chartViewMode,
     isLoading,
     chartData,
   } = storeToRefs(store)
@@ -51,6 +52,7 @@ export function useStatistics() {
     chartDateRange,
     comparisonDateRange,
     chartType,
+    chartViewMode,
     isLoading,
 
     // Methods
@@ -66,5 +68,6 @@ export function useStatistics() {
     setComparisonDateRange: (from: string | null, to: string | null) =>
       store.setComparisonDateRange(from, to),
     setChartType: (type: ChartType) => store.setChartType(type),
+    setChartViewMode: (mode: ChartViewMode) => store.setChartViewMode(mode),
   }
 }
