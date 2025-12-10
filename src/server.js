@@ -242,15 +242,21 @@ function getDateKey(scheduleDate) {
 
 // Start periodic fetching
 function startPeriodicFetch() {
-  // Initial fetch
-  performFetch().catch(console.error);
-
-  // Schedule periodic fetches
-  setInterval(() => {
-    performFetch().catch(console.error);
-  }, FETCH_INTERVAL_MS);
+  // Delay initial fetch to allow health checks to pass first
+  // Puppeteer/Chromium launch is resource-intensive and can block the event loop
+  const INITIAL_FETCH_DELAY = 5000; // 5 seconds
 
   console.log(`Periodic fetch scheduled every ${FETCH_INTERVAL_MS / 1000} seconds`);
+  console.log(`Initial fetch will start in ${INITIAL_FETCH_DELAY / 1000} seconds...`);
+
+  setTimeout(() => {
+    performFetch().catch(console.error);
+
+    // Schedule periodic fetches after initial fetch
+    setInterval(() => {
+      performFetch().catch(console.error);
+    }, FETCH_INTERVAL_MS);
+  }, INITIAL_FETCH_DELAY);
 }
 
 // SPA fallback - serve index.html for all non-API routes (Vue Router)
