@@ -222,6 +222,7 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | GET | `/api/schedule/:dateKey` | Full history for specific date |
 | GET | `/api/history/:dateKey` | Day summary with change timeline |
 | GET | `/api/statistics?from=&to=` | Multi-day stats with optional date range |
+| GET | `/api/export` | Export all schedules (for data transfer between instances) |
 | GET | `/api/status` | App status, version, Telegram subscriber counts |
 | POST | `/api/fetch` | Trigger immediate fetch (returns 409 if already fetching) |
 | POST | `/api/schedule/import` | Import single schedule record |
@@ -299,6 +300,14 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 
 ## Deployment Notes
 
+**Environments:**
+
+| Environment | URL | Branch |
+|-------------|-----|--------|
+| Production | https://lighttracker.up.railway.app | main |
+| Staging | https://exciting-celebration-staging.up.railway.app | feature/ui-redesign |
+
+**Infrastructure:**
 - Docker uses system Chromium (`apt-get`) not bundled Puppeteer Chromium
 - `dumb-init` handles signal forwarding in Docker
 - Volume mount `./data:/app/data` for persistence
