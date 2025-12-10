@@ -38,21 +38,6 @@ const getSelectedGroupData = () => {
 
 <template>
   <div class="relative">
-    <!-- Back button (detail view only) -->
-    <Transition name="fade">
-      <div v-if="viewMode === 'detail'" class="mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          class="text-text-secondary hover:text-text-primary"
-          @click="backToOverview"
-        >
-          <ArrowLeft :size="16" class="mr-2" />
-          Назад до огляду
-        </Button>
-      </div>
-    </Transition>
-
     <!-- View container with transitions -->
     <Transition name="timeline-switch" mode="out-in">
       <!-- Overview mode: show all groups -->
@@ -65,6 +50,19 @@ const getSelectedGroupData = () => {
 
       <!-- Detail mode: show single group detailed view -->
       <div v-else key="detail">
+        <!-- Back button inside detail view to prevent layout jump -->
+        <div class="mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            class="text-text-secondary hover:text-text-primary"
+            @click="backToOverview"
+          >
+            <ArrowLeft :size="16" class="mr-2" />
+            Назад до огляду
+          </Button>
+        </div>
+
         <div class="mb-4">
           <h2 class="text-xl font-semibold text-text-primary">
             Група {{ selectedGroup }}
@@ -79,17 +77,6 @@ const getSelectedGroupData = () => {
 </template>
 
 <style scoped>
-/* Fade transition for back button */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 /* Timeline switch transition */
 .timeline-switch-enter-active {
   transition: all 0.3s ease-out;
