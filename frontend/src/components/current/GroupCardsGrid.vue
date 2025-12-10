@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, nextTick } from 'vue'
+import { computed, onMounted, nextTick, ref } from 'vue'
 import gsap from 'gsap'
 import GroupCard from './GroupCard.vue'
 import { useMyGroup } from '@/composables/useMyGroup'
@@ -16,6 +16,7 @@ const props = defineProps<Props>()
 
 const { myGroup } = useMyGroup()
 const uiStore = useUIStore()
+const containerRef = ref<HTMLElement | null>(null)
 
 // Sort groups so my group appears first if set
 const sortedGroups = computed<GroupId[]>(() => {
@@ -45,9 +46,10 @@ onMounted(async () => {
   await nextTick()
 
   // Use gsap.fromTo to ensure final state is always applied
+  // Scope query to container ref to avoid affecting other components
   setTimeout(() => {
-    const cards = document.querySelectorAll('.group-card')
-    if (cards.length > 0) {
+    const cards = containerRef.value?.querySelectorAll('.group-card')
+    if (cards && cards.length > 0) {
       gsap.fromTo(cards,
         { y: 20, opacity: 0 },
         {
@@ -64,7 +66,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
+  <div ref="containerRef" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
     <GroupCard
       v-for="groupId in sortedGroups"
       :key="groupId"

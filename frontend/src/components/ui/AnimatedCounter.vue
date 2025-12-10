@@ -27,14 +27,20 @@ const animateToValue = (newValue: number) => {
   })
 }
 
+// Watch for value changes after initial mount
+// Skip initial call to prevent double animation with onMounted
 watch(
   () => props.value,
-  (newValue) => {
-    animateToValue(newValue)
+  (newValue, oldValue) => {
+    // Only animate on subsequent changes, not initial
+    if (oldValue !== undefined) {
+      animateToValue(newValue)
+    }
   }
 )
 
 onMounted(() => {
+  // Initial animation on mount
   animateToValue(props.value)
 })
 </script>

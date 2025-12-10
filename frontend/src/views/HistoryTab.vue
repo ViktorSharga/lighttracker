@@ -34,7 +34,7 @@ onMounted(async () => {
     <DateSelector />
 
     <!-- Day Summary Card - Shows summary for selected date -->
-    <DaySummaryCard v-if="summary" />
+    <DaySummaryCard v-if="summary" :summary="summary" />
 
     <!-- Two-column layout for groups and timeline / detail -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -43,7 +43,7 @@ onMounted(async () => {
         <!-- Groups Grid -->
         <div>
           <h2 class="text-xl font-semibold mb-4">Групи</h2>
-          <GroupsGrid @select-group="handleGroupSelect" />
+          <GroupsGrid v-if="summary" :summary="summary" @select-group="handleGroupSelect" />
         </div>
 
         <!-- Changes Timeline -->

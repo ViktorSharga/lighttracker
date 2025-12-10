@@ -21,7 +21,6 @@ const tabs = [
 // Refs for animation
 const tabsListRef = ref<HTMLElement | null>(null)
 const indicatorRef = ref<HTMLDivElement | null>(null)
-const contentRef = ref<HTMLDivElement | null>(null)
 
 // Update active tab in store
 const handleTabChange = (value: string) => {
@@ -51,30 +50,9 @@ const animateIndicator = async () => {
   })
 }
 
-// Animate content fade
-const animateContent = () => {
-  if (!contentRef.value) return
-
-  // Fade out and back in
-  gsap.timeline()
-    .to(contentRef.value, {
-      opacity: 0,
-      y: -10,
-      duration: 0.15,
-      ease: 'power2.in',
-    })
-    .to(contentRef.value, {
-      opacity: 1,
-      y: 0,
-      duration: 0.2,
-      ease: 'power2.out',
-    })
-}
-
-// Watch for tab changes to trigger animations
+// Watch for tab changes to trigger indicator animation
 watch(activeTab, () => {
   animateIndicator()
-  animateContent()
 })
 
 // Initialize indicator position on mount with retry
@@ -151,11 +129,6 @@ onMounted(async () => {
         </TabsList>
       </div>
     </Tabs>
-
-    <!-- Content wrapper for fade animations -->
-    <div ref="contentRef" class="mt-6">
-      <slot />
-    </div>
   </div>
 </template>
 

@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import type { GroupData } from '@/services/types'
 
 interface TimelineSegment {
@@ -17,8 +17,10 @@ interface HourlyBreakdown {
 /**
  * Processes schedule data for 24-hour timeline visualization
  * Provides formatted data for rendering power outage timelines
+ *
+ * Accepts refs or plain values for groupData - reactive updates handled automatically
  */
-export function useTimelineData(groupData: GroupData | null) {
+export function useTimelineData(groupData: MaybeRefOrGetter<GroupData | null>) {
   /**
    * Parse time string "HH:MM" into hours and minutes
    */
@@ -32,7 +34,8 @@ export function useTimelineData(groupData: GroupData | null) {
    * Each segment represents a continuous period of power on/off
    */
   const segments = computed<TimelineSegment[]>(() => {
-    if (!groupData || groupData.intervals.length === 0) {
+    const data = toValue(groupData)
+    if (!data || data.intervals.length === 0) {
       // If no intervals, power is on all day
       return [
         {
@@ -45,7 +48,7 @@ export function useTimelineData(groupData: GroupData | null) {
     }
 
     const result: TimelineSegment[] = []
-    const intervals = [...groupData.intervals].sort((a, b) => {
+    const intervals = [...data.intervals].sort((a, b) => {
       const aTime = parseTime(a.start)
       const bTime = parseTime(b.start)
       return aTime.hour * 60 + aTime.minute - (bTime.hour * 60 + bTime.minute)
@@ -97,7 +100,8 @@ export function useTimelineData(groupData: GroupData | null) {
    * Calculate minutes without power for each hour of the day
    */
   const hourlyBreakdown = computed<HourlyBreakdown[]>(() => {
-    if (!groupData || groupData.intervals.length === 0) {
+    const data = toValue(groupData)
+    if (!data || data.intervals.length === 0) {
       // No outages, all hours have 0 minutes off
       return Array.from({ length: 24 }, (_, hour) => ({
         hour,
@@ -110,7 +114,7 @@ export function useTimelineData(groupData: GroupData | null) {
     const breakdown: number[] = new Array(24).fill(0)
 
     // Process each interval
-    for (const interval of groupData.intervals) {
+    for (const interval of data.intervals) {
       const start = parseTime(interval.start)
       const end = parseTime(interval.end)
       const startMinute = start.hour * 60 + start.minute
@@ -135,7 +139,8 @@ export function useTimelineData(groupData: GroupData | null) {
    * Total minutes without power for the day
    */
   const totalMinutesOff = computed(() => {
-    return groupData?.totalMinutesOff ?? 0
+    const data = toValue(groupData)
+    return data?.totalMinutesOff ?? 0
   })
 
   /**

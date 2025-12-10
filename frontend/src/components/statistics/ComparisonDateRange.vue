@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { Calendar } from 'lucide-vue-next'
 import { GlassCard, Input, Button } from '@/components/ui'
 import { useStatisticsStore } from '@/stores/statisticsStore'
@@ -7,17 +7,16 @@ import { cn } from '@/lib/utils'
 
 const statisticsStore = useStatisticsStore()
 
-// Local date inputs
-const dateFrom = ref<string>(statisticsStore.comparisonDateFrom || '')
-const dateTo = ref<string>(statisticsStore.comparisonDateTo || '')
+// Two-way sync with store using computed get/set
+const dateFrom = computed({
+  get: () => statisticsStore.comparisonDateFrom || '',
+  set: (v) => statisticsStore.setComparisonDateRange(v || null, dateTo.value || null)
+})
 
-// Apply date range filter
-const applyDateRange = () => {
-  statisticsStore.setComparisonDateRange(
-    dateFrom.value || null,
-    dateTo.value || null
-  )
-}
+const dateTo = computed({
+  get: () => statisticsStore.comparisonDateTo || '',
+  set: (v) => statisticsStore.setComparisonDateRange(dateFrom.value || null, v || null)
+})
 
 // Quick preset buttons
 const setPreset = (preset: 'week' | 'month' | 'all') => {
@@ -28,25 +27,20 @@ const setPreset = (preset: 'week' | 'month' | 'all') => {
     case 'week': {
       const weekAgo = new Date(today)
       weekAgo.setDate(weekAgo.getDate() - 7)
-      dateFrom.value = weekAgo.toISOString().split('T')[0]
-      dateTo.value = todayStr
+      statisticsStore.setComparisonDateRange(weekAgo.toISOString().split('T')[0], todayStr)
       break
     }
     case 'month': {
       const monthAgo = new Date(today)
       monthAgo.setMonth(monthAgo.getMonth() - 1)
-      dateFrom.value = monthAgo.toISOString().split('T')[0]
-      dateTo.value = todayStr
+      statisticsStore.setComparisonDateRange(monthAgo.toISOString().split('T')[0], todayStr)
       break
     }
     case 'all': {
-      dateFrom.value = ''
-      dateTo.value = ''
+      statisticsStore.setComparisonDateRange(null, null)
       break
     }
   }
-
-  applyDateRange()
 }
 
 // Check if a preset is active
@@ -85,7 +79,7 @@ const isPresetActive = computed(() => {
         <h3 class="text-sm font-medium">Період порівняння груп</h3>
       </div>
 
-      <!-- Date inputs -->
+      <!-- Date inputs - v-model on computed auto-syncs with store -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div class="space-y-1.5">
           <label class="text-xs text-gray-400">Від</label>
@@ -93,7 +87,6 @@ const isPresetActive = computed(() => {
             v-model="dateFrom"
             type="date"
             placeholder="Початок"
-            @change="applyDateRange"
           />
         </div>
 
@@ -103,7 +96,6 @@ const isPresetActive = computed(() => {
             v-model="dateTo"
             type="date"
             placeholder="Кінець"
-            @change="applyDateRange"
           />
         </div>
       </div>

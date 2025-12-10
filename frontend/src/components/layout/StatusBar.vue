@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed } from 'vue'
 import { StatusDot } from '@/components/ui'
 import { useStatus } from '@/composables/useStatus'
 import { useScheduleStore } from '@/stores/scheduleStore'
 
 // Composables and stores
+// useStatus provides nextFetchIn which already counts down every second
 const { status, isOnline, nextFetchIn, telegramStats } = useStatus()
 const scheduleStore = useScheduleStore()
-
-// Local countdown state (updated every second)
-const countdown = ref(0)
-let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 // Computed: Status dot state
 const statusDotState = computed<'online' | 'offline' | 'fetching'>(() => {
@@ -33,8 +30,9 @@ const lastFetchTimeFormatted = computed(() => {
 })
 
 // Computed: Next fetch countdown formatted
+// Uses nextFetchIn directly from useStatus (already decrements every second)
 const nextFetchFormatted = computed(() => {
-  const seconds = countdown.value
+  const seconds = nextFetchIn.value
 
   if (seconds <= 0) {
     return '0с'
@@ -63,26 +61,6 @@ const telegramDisplay = computed(() => {
   return {
     count: telegramStats.value.subscribers,
     hasGroups: Object.keys(telegramStats.value.byGroup).length > 0
-  }
-})
-
-// Update countdown every second
-const startCountdown = () => {
-  countdown.value = nextFetchIn.value
-
-  countdownTimer = setInterval(() => {
-    countdown.value = nextFetchIn.value
-  }, 1000)
-}
-
-// Lifecycle
-onMounted(() => {
-  startCountdown()
-})
-
-onUnmounted(() => {
-  if (countdownTimer) {
-    clearInterval(countdownTimer)
   }
 })
 </script>

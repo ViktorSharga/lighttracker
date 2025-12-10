@@ -1,11 +1,16 @@
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, toValue, type MaybeRefOrGetter } from 'vue'
 import type { GroupId, Schedule, Interval } from '@/services/types'
 
 /**
  * Calculates and tracks countdown to next power outage for a specific group
  * Updates every second automatically
+ *
+ * Accepts refs or plain values for groupId and schedule - handles null internally
  */
-export function useCountdown(groupId: GroupId, schedule: Schedule | null) {
+export function useCountdown(
+  groupId: MaybeRefOrGetter<GroupId | null>,
+  schedule: MaybeRefOrGetter<Schedule | null>
+) {
   const now = ref(new Date())
   let intervalId: ReturnType<typeof setInterval> | null = null
 
@@ -30,7 +35,10 @@ export function useCountdown(groupId: GroupId, schedule: Schedule | null) {
 
   // Find the next outage interval
   const nextOutage = computed(() => {
-    if (!schedule) {
+    const scheduleValue = toValue(schedule)
+    const groupIdValue = toValue(groupId)
+
+    if (!scheduleValue || !groupIdValue) {
       return {
         start: null,
         end: null,
@@ -41,7 +49,7 @@ export function useCountdown(groupId: GroupId, schedule: Schedule | null) {
       }
     }
 
-    const groupData = schedule.groups[groupId]
+    const groupData = scheduleValue.groups[groupIdValue]
     if (!groupData || groupData.intervals.length === 0) {
       return {
         start: null,
@@ -173,8 +181,8 @@ export function useCountdown(groupId: GroupId, schedule: Schedule | null) {
     stopTimer()
   })
 
-  // Restart timer if schedule changes
-  watch(() => schedule, () => {
+  // Restart timer if schedule or groupId changes
+  watch([() => toValue(schedule), () => toValue(groupId)], () => {
     now.value = new Date()
   })
 

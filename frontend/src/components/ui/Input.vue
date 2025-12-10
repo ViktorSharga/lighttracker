@@ -27,6 +27,9 @@ const handleInput = (event: Event) => {
 }
 
 const handleChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  // Also emit modelValue on change for date inputs (some browsers only fire change, not input)
+  emit('update:modelValue', target.value)
   emit('change', event)
 }
 </script>

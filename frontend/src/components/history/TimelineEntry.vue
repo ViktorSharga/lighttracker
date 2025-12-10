@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { Clock, ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { GlassCard, ChangeBadge } from '@/components/ui'
 import type { ChangeTimelineEntry } from '@/services/types'
@@ -41,8 +41,11 @@ const sortedGroupChanges = computed(() => {
     })
 })
 
-const toggleExpand = () => {
+const toggleExpand = async () => {
   isExpanded.value = !isExpanded.value
+
+  // Wait for DOM to update before animating (element uses v-if)
+  await nextTick()
 
   if (isExpanded.value && detailsRef.value) {
     gsap.fromTo(

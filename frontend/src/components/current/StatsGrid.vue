@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { TrendingUp, TrendingDown, Minus, Percent } from 'lucide-vue-next'
 import { GlassCard, AnimatedCounter } from '@/components/ui'
 import type { Comparison } from '@/services/types'
@@ -53,6 +53,11 @@ const cards = computed(() => {
 })
 
 const cardRefs = ref<HTMLElement[]>([])
+
+// Reset refs array when cards change to prevent stale references
+watch(() => cards.value, () => {
+  cardRefs.value = []
+}, { flush: 'pre' })
 
 const getColorClasses = (color: string) => {
   switch (color) {

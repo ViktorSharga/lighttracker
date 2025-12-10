@@ -21,11 +21,12 @@ npm start                                # Production server
 
 ```bash
 cd frontend
-npm install         # Install frontend dependencies
-npm run dev         # Dev server with HMR (proxies API to localhost:3000)
-npm run build       # Production build to dist/
-npm run typecheck   # TypeScript type checking
-npm run preview     # Preview production build
+npm install          # Install frontend dependencies
+npm run dev          # Dev server with HMR (proxies API to localhost:3000)
+npm run build        # Production build to dist/
+npm run build:check  # Typecheck + build (CI use)
+npm run typecheck    # TypeScript type checking only
+npm run preview      # Preview production build
 ```
 
 ### Docker
@@ -115,7 +116,7 @@ node scripts/import-data.js <base-url> [data-file]
 
 The `frontend/` directory contains a Vue 3 + TypeScript SPA with glass-morphism dark theme.
 
-**Tech Stack:** Vue 3.5 • TypeScript 5.6 • Vite 5.4 • Tailwind CSS 3.4 • Radix Vue • Pinia • GSAP • Chart.js
+**Tech Stack:** Vue 3.5 • TypeScript 5.6 • Vite 5.4 • Tailwind CSS 3.4 • Radix Vue • Pinia • GSAP • Chart.js • VueUse • Lucide Icons
 
 **Structure:**
 ```
@@ -126,7 +127,7 @@ frontend/src/
 │   ├── layout/      # AppHeader, TabNavigation, StatusBar
 │   ├── statistics/  # ChartControls, OutageChart, GroupComparisonTable
 │   └── ui/          # Button, Card, Select, Tabs, Table, Badge, GlassCard, Toast
-├── composables/     # useSchedule, useStatistics, useHistory, useCountdown, useMyGroup, useToast
+├── composables/     # useSchedule, useStatistics, useHistory, useCountdown, useMyGroup, useToast, useStatus, useAnimation, useTimelineData
 ├── stores/          # scheduleStore, statisticsStore, historyStore, uiStore, preferencesStore
 ├── views/           # CurrentTab, HistoryTab, StatisticsTab
 ├── services/        # api.ts, types.ts

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { GlassCard } from '@/components/ui'
 import { useTimelineData } from '@/composables/useTimelineData'
 import type { GroupData } from '@/services/types'
@@ -12,11 +12,14 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const { hourlyBreakdown } = useTimelineData(props.groupData)
+// Pass a getter function to maintain reactivity when props.groupData changes
+const { hourlyBreakdown } = useTimelineData(() => props.groupData)
 
 const currentHour = ref(new Date().getHours())
 
 const timelineRef = ref<HTMLElement | null>(null)
+
+let hourUpdateInterval: ReturnType<typeof setInterval>
 
 // Update current hour every minute
 onMounted(() => {
@@ -34,11 +37,13 @@ onMounted(() => {
   }
 
   // Update current hour periodically
-  const interval = setInterval(() => {
+  hourUpdateInterval = setInterval(() => {
     currentHour.value = new Date().getHours()
   }, 60000) // Update every minute
+})
 
-  return () => clearInterval(interval)
+onUnmounted(() => {
+  clearInterval(hourUpdateInterval)
 })
 </script>
 

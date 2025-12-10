@@ -11,22 +11,18 @@ const { myGroup } = useMyGroup()
 const scheduleStore = useScheduleStore()
 const { current } = storeToRefs(scheduleStore)
 
-// Get countdown data for user's selected group
-const countdown = computed(() => {
-  if (!myGroup.value || !current.value) {
-    return null
-  }
-  return useCountdown(myGroup.value, current.value)
-})
+// Get countdown data for user's selected group - called at setup time with refs
+// The composable handles null values internally
+const countdown = useCountdown(myGroup, current)
 
 // Check if we should show the alert
 const shouldShow = computed(() => {
   return myGroup.value !== null && current.value !== null
 })
 
-// Get countdown details
-const nextOutage = computed(() => countdown.value?.nextOutage.value)
-const isUrgent = computed(() => countdown.value?.isUrgent.value ?? false)
+// Get countdown details - access computed values from the composable
+const nextOutage = computed(() => countdown.nextOutage.value)
+const isUrgent = computed(() => countdown.isUrgent.value)
 const isCurrentlyOff = computed(() => nextOutage.value?.isCurrentlyOff ?? false)
 
 // Parse countdown string to get hours and minutes for animated display

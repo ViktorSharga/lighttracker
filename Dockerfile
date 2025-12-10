@@ -19,6 +19,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY src/ ./src/
+COPY scripts/ ./scripts/
 COPY VERSION ./
 COPY --from=frontend /app/frontend/dist ./frontend/dist
 
