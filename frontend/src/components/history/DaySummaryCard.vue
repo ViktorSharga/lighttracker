@@ -10,14 +10,12 @@ interface Props {
 
 const props = defineProps<Props>()
 
-// Format time from ISO string to HH:MM
-const formatTime = (isoString: string): string => {
-  const date = new Date(isoString)
-  return date.toLocaleTimeString('uk-UA', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  })
+// Format time - handles "HH:MM DD.MM.YYYY" format from API
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '--:--'
+  // API returns "HH:MM DD.MM.YYYY" format, extract just the time part
+  const timePart = timeString.split(' ')[0]
+  return timePart || '--:--'
 }
 
 // Formatted times
