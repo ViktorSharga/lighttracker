@@ -102,6 +102,12 @@ app.get('/api/statistics', (req, res) => {
   res.json(statistics);
 });
 
+// API: Export all schedules (for data transfer between instances)
+app.get('/api/export', (req, res) => {
+  const schedulesByDate = getAllSchedules();
+  res.json(schedulesByDate);
+});
+
 // API: Import a single schedule (for historical data)
 app.post('/api/schedule/import', (req, res) => {
   const record = req.body;
