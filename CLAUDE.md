@@ -8,40 +8,22 @@ LightTracker is a power outage schedule tracker for Lviv, Ukraine. It monitors h
 
 ## Development Commands
 
-**IMPORTANT:** Always use Docker for building, testing, and running the application. Do NOT run npm commands directly on the host machine.
+**CRITICAL: ALWAYS use Docker for ALL development tasks.** Never run npm/node commands directly on the host machine. This includes building, testing, type checking, and running the application.
 
-### Docker (Primary Development Method)
+### Docker Commands (MANDATORY)
 
 ```bash
-docker compose up -d --build      # Build and run (use this for testing changes)
+docker compose up -d --build      # Build and run (use this for testing ANY changes)
 docker compose logs -f            # View logs
+docker compose logs --tail=50     # View recent logs
 docker compose down               # Stop
 docker compose build --no-cache   # Rebuild from scratch (if caching issues)
 ```
 
-### Local Development (NOT recommended, use Docker instead)
-
-Backend:
-```bash
-npm install                              # Install dependencies
-npx puppeteer browsers install chrome    # Install Chromium (local dev only)
-npm run dev                              # Dev server with --watch
-```
-
-Frontend:
-```bash
-cd frontend
-npm install          # Install frontend dependencies
-npm run dev          # Dev server with HMR (proxies API to localhost:3000)
-npm run build        # Production build to dist/
-npm run typecheck    # TypeScript type checking only
-```
-
-### Data Management
+### Data Management (via Docker)
 
 ```bash
-# Import historical data from another instance
-node scripts/import-data.js <base-url> [data-file]
+docker compose exec lighttracker node scripts/import-data.js <base-url> [data-file]
 ```
 
 ## Architecture Overview

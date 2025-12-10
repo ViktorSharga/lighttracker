@@ -12,6 +12,7 @@ import { useStatistics } from '@/composables/useStatistics'
 const {
   statistics,
   chartData,
+  groupComparison,
   groupRankings,
   chartType,
   fetchStats,
@@ -49,10 +50,10 @@ onMounted(async () => {
       <!-- Comparison Date Range - Separate date range for comparison table -->
       <ComparisonDateRange />
 
-      <!-- Group Comparison Table - Rankings and statistics -->
+      <!-- Group Comparison Table - Rankings and statistics (uses filtered data) -->
       <GroupComparisonTable
-        v-if="statistics?.groupComparison"
-        :group-comparison="statistics.groupComparison"
+        v-if="groupComparison && Object.keys(groupComparison).length > 0"
+        :group-comparison="groupComparison"
       />
     </div>
   </div>

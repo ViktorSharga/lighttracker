@@ -19,11 +19,15 @@ const dateTo = computed({
 })
 
 // Quick preset buttons
-const setPreset = (preset: 'week' | 'month' | 'all') => {
+const setPreset = (preset: 'today' | 'week' | 'month' | 'all') => {
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
 
   switch (preset) {
+    case 'today': {
+      statisticsStore.setComparisonDateRange(todayStr, todayStr)
+      break
+    }
     case 'week': {
       const weekAgo = new Date(today)
       weekAgo.setDate(weekAgo.getDate() - 7)
@@ -52,6 +56,9 @@ const isPresetActive = computed(() => {
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
+
+  // Check for today preset (both dates are today)
+  if (from === todayStr && to === todayStr) return 'today'
 
   if (to === todayStr) {
     const weekAgo = new Date(today)
@@ -102,6 +109,13 @@ const isPresetActive = computed(() => {
 
       <!-- Quick presets -->
       <div class="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          :variant="isPresetActive === 'today' ? 'default' : 'outline'"
+          @click="setPreset('today')"
+        >
+          Сьогодні
+        </Button>
         <Button
           size="sm"
           :variant="isPresetActive === 'week' ? 'default' : 'outline'"

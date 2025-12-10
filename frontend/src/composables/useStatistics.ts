@@ -19,6 +19,7 @@ export function useStatistics() {
     chartViewMode,
     isLoading,
     chartData,
+    groupComparison,
   } = storeToRefs(store)
 
   // Reactive date range objects for easier two-way binding
@@ -32,11 +33,11 @@ export function useStatistics() {
     to: comparisonDateTo,
   })
 
-  // Computed group rankings (sorted by rank)
+  // Computed group rankings (sorted by rank) - uses filtered groupComparison
   const groupRankings = computed(() => {
-    if (!statistics.value) return []
+    if (!groupComparison.value || Object.keys(groupComparison.value).length === 0) return []
 
-    return Object.entries(statistics.value.groupComparison)
+    return Object.entries(groupComparison.value)
       .map(([groupId, data]) => ({
         groupId,
         ...data,
@@ -48,6 +49,7 @@ export function useStatistics() {
     // State
     statistics,
     chartData,
+    groupComparison,
     groupRankings,
     chartDateRange,
     comparisonDateRange,
