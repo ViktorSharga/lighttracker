@@ -227,7 +227,7 @@ const handleRefresh = async () => {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 430px) {
   .app-header-container {
     padding: 0 0.75rem;
   }

@@ -119,7 +119,7 @@ onMounted(() => {
           <div class="text-text-secondary text-sm font-medium mb-2">
             {{ card.label }}
           </div>
-          <div class="text-4xl font-bold text-text-primary">
+          <div class="text-2xl sm:text-4xl font-bold text-text-primary">
             <AnimatedCounter
               :value="card.value"
               :duration="1.2"

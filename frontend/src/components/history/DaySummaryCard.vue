@@ -137,7 +137,7 @@ const changeCountColor = computed(() => {
     </h3>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
       <!-- Update Count -->
       <div class="flex items-start gap-3 rounded-lg bg-bg-primary/30 p-3">
         <div class="rounded-md bg-accent-blue/20 p-2">

@@ -137,7 +137,7 @@ const bgGradientClass = computed(() => {
           <!-- Main summary message with gradient text effect -->
           <p
             :class="[
-              'text-2xl font-bold leading-tight',
+              'text-xl sm:text-2xl font-bold leading-tight',
               statusColorClass,
               hasChanges && 'bg-gradient-to-r bg-clip-text',
               changeStatus === 'worse' && 'from-accent-red via-accent-red/80 to-accent-red',

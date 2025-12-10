@@ -37,9 +37,9 @@ onMounted(async () => {
     <DaySummaryCard v-if="summary" :summary="summary" />
 
     <!-- Two-column layout for groups and timeline / detail -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       <!-- Left column: Groups Grid and Changes Timeline -->
-      <div class="lg:col-span-2 space-y-6">
+      <div class="md:col-span-1 lg:col-span-2 space-y-6">
         <!-- Groups Grid -->
         <div>
           <h2 class="text-xl font-semibold mb-4">Групи</h2>
@@ -54,7 +54,7 @@ onMounted(async () => {
       </div>
 
       <!-- Right column: Group History Detail -->
-      <div class="lg:col-span-1">
+      <div class="md:col-span-1 lg:col-span-1">
         <GroupHistoryDetail
           v-if="selectedGroupId"
           :group-id="selectedGroupId"

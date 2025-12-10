@@ -138,9 +138,9 @@ const isPowerOnAndSafe = computed(() => {
             <AnimatedCounter
               :value="countdownParts.hours"
               :duration="0.5"
-              class="text-4xl font-bold tabular-nums text-white"
+              class="text-2xl sm:text-4xl font-bold tabular-nums text-white"
             />
-            <span class="text-xl text-white/70">год</span>
+            <span class="text-base sm:text-xl text-white/70">год</span>
           </div>
 
           <!-- Minutes -->
@@ -148,9 +148,9 @@ const isPowerOnAndSafe = computed(() => {
             <AnimatedCounter
               :value="countdownParts.minutes"
               :duration="0.5"
-              class="text-4xl font-bold tabular-nums text-white"
+              class="text-2xl sm:text-4xl font-bold tabular-nums text-white"
             />
-            <span class="text-xl text-white/70">хв</span>
+            <span class="text-base sm:text-xl text-white/70">хв</span>
           </div>
         </div>
 

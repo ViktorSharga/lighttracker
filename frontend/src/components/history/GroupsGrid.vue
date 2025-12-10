@@ -79,7 +79,7 @@ const getButtonClasses = (groupId: GroupId) => {
 </script>
 
 <template>
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
     <Button
       v-for="groupId in ALL_GROUPS"
       :key="groupId"

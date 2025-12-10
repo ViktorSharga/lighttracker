@@ -63,7 +63,7 @@ onMounted(async () => {
     </div>
 
     <!-- Time axis -->
-    <div class="flex justify-between text-xs text-text-secondary mt-4 px-12">
+    <div class="flex justify-between text-xs text-text-secondary mt-4 px-2 sm:px-6 md:px-12">
       <span>00:00</span>
       <span>06:00</span>
       <span>12:00</span>
