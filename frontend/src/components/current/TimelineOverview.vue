@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { GlassCard } from '@/components/ui'
 import TimelineOverviewRow from './TimelineOverviewRow.vue'
 import { useMyGroup } from '@/composables/useMyGroup'
@@ -21,9 +21,15 @@ const { myGroup } = useMyGroup()
 const containerRef = ref<HTMLElement | null>(null)
 
 // Animate rows on mount
-onMounted(() => {
+onMounted(async () => {
+  // Wait for Vue to finish rendering all elements
+  await nextTick()
+
   const rows = containerRef.value?.querySelectorAll('[data-group]')
-  if (rows) {
+  if (rows && rows.length > 0) {
+    // Set final state first to ensure visibility
+    gsap.set(rows, { opacity: 1, x: 0 })
+    // Then animate from invisible
     gsap.from(rows, {
       opacity: 0,
       x: -20,
