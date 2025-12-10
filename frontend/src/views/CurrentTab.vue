@@ -4,7 +4,7 @@ import {
   CountdownAlert,
   SummaryCard,
   StatsGrid,
-  Timeline24Hour,
+  TimelineSection,
   GroupCardsGrid,
 } from '@/components/current'
 import { useSchedule } from '@/composables/useSchedule'
@@ -33,11 +33,8 @@ onMounted(async () => {
     <!-- Stats Grid - Shows comparison statistics -->
     <StatsGrid v-if="comparison" :comparison="comparison" />
 
-    <!-- My Group Timeline - Only shown if user has selected their group -->
-    <div v-if="myGroup && myGroupData">
-      <h2 class="text-xl font-semibold mb-4">Моя група</h2>
-      <Timeline24Hour :group-data="myGroupData" />
-    </div>
+    <!-- Timeline Section - Overview with drill-down to detail -->
+    <TimelineSection v-if="schedule" :schedule="schedule" />
 
     <!-- All Groups Grid -->
     <div>

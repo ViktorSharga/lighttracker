@@ -58,7 +58,7 @@ onUnmounted(() => {
 
     <div
       ref="timelineRef"
-      class="space-y-1.5 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+      class="timeline-scroll space-y-1.5 overflow-y-auto pr-1"
     >
       <div
         v-for="item in hourlyBreakdown"
@@ -106,22 +106,27 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Custom scrollbar */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
+/* Custom scrollbar - matching design system */
+.timeline-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(91, 141, 239, 0.3) transparent;
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
+.timeline-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.timeline-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+.timeline-scroll::-webkit-scrollbar-thumb {
+  background: rgba(91, 141, 239, 0.3);
+  border-radius: 2px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+.timeline-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(91, 141, 239, 0.5);
 }
 
 @keyframes pulse {

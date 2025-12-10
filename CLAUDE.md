@@ -8,34 +8,33 @@ LightTracker is a power outage schedule tracker for Lviv, Ukraine. It monitors h
 
 ## Development Commands
 
-### Backend (Node.js + Express + Puppeteer)
+**IMPORTANT:** Always use Docker for building, testing, and running the application. Do NOT run npm commands directly on the host machine.
 
+### Docker (Primary Development Method)
+
+```bash
+docker compose up -d --build      # Build and run (use this for testing changes)
+docker compose logs -f            # View logs
+docker compose down               # Stop
+docker compose build --no-cache   # Rebuild from scratch (if caching issues)
+```
+
+### Local Development (NOT recommended, use Docker instead)
+
+Backend:
 ```bash
 npm install                              # Install dependencies
 npx puppeteer browsers install chrome    # Install Chromium (local dev only)
 npm run dev                              # Dev server with --watch
-npm start                                # Production server
 ```
 
-### Frontend (Vue 3 + TypeScript + Vite)
-
+Frontend:
 ```bash
 cd frontend
 npm install          # Install frontend dependencies
 npm run dev          # Dev server with HMR (proxies API to localhost:3000)
 npm run build        # Production build to dist/
-npm run build:check  # Typecheck + build (CI use)
 npm run typecheck    # TypeScript type checking only
-npm run preview      # Preview production build
-```
-
-### Docker
-
-```bash
-docker compose up -d              # Build and run
-docker compose logs -f            # View logs
-docker compose down               # Stop
-docker compose build --no-cache   # Rebuild from scratch
 ```
 
 ### Data Management
