@@ -157,6 +157,11 @@ app.post('/api/fetch', async (req, res) => {
   }
 });
 
+// Health check endpoint for Railway/container orchestration
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // API: Get status
 app.get('/api/status', (req, res) => {
   res.json({
