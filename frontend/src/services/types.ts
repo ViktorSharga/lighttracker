@@ -187,6 +187,71 @@ export interface StatisticsResponse {
   allRecords: RecordStats[];
   groupComparison: Record<string, GroupComparisonData>;
   summary: StatisticsSummary;
+  timeOfDayAnalysis: TimeOfDayAnalysis | null;
+}
+
+// ============================================
+// TIME-OF-DAY IMPACT ANALYSIS
+// ============================================
+
+export interface TimeSlotDefinition {
+  id: string;
+  label: string;         // Ukrainian label
+  startHour: number;
+  endHour: number;
+  weight: number;
+  color: string;
+}
+
+export interface WeightedGroupComparisonData extends GroupComparisonData {
+  weightedTotalMinutes: number;
+  weightedAverageMinutes: number;
+  impactScore: number;   // 0-100 normalized
+  weightedRank: number;
+}
+
+export interface HourlyHeatmapData {
+  groups: string[];      // ['1.1', '1.2', ...]
+  hours: number[];       // [0, 1, ..., 23]
+  data: number[][];      // [groupIndex][hourIndex] = average minutes off
+  maxValue: number;      // For color scale normalization
+}
+
+export interface TimeSlotValue {
+  minutes: number;
+  percentage: number;
+}
+
+export interface TimeSlotDistributionData {
+  night: TimeSlotValue;
+  morning: TimeSlotValue;
+  daytime: TimeSlotValue;
+  primeTime: TimeSlotValue;
+  lateEvening: TimeSlotValue;
+}
+
+export interface FairnessMetricsDetail {
+  mean: number;
+  variance: number;
+  stdDev: number;
+  coefficientOfVariation: number;
+}
+
+export interface FairnessMetrics {
+  raw: FairnessMetricsDetail;
+  weighted: FairnessMetricsDetail;
+  fairnessScore: number;         // 0-100, higher = more equal
+  weightedFairnessScore: number;
+}
+
+export interface TimeOfDayAnalysis {
+  weightedGroupComparison: Record<string, WeightedGroupComparisonData>;
+  hourlyHeatmap: HourlyHeatmapData;
+  timeSlotDistribution: Record<string, TimeSlotDistributionData>;
+  fairnessMetrics: FairnessMetrics;
+  excludeWeekends: boolean;
+  weekendDaysExcluded: number;
+  timeSlots: TimeSlotDefinition[];
 }
 
 // ============================================

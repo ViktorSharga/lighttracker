@@ -36,10 +36,11 @@ export const api = {
     fetchJSON<HistoryResponse>(`/api/history/${dateKey}`),
 
   // Statistics endpoint
-  getStatistics: (from?: string, to?: string) => {
+  getStatistics: (from?: string, to?: string, excludeWeekends?: boolean) => {
     const params = new URLSearchParams();
     if (from) params.set('from', from);
     if (to) params.set('to', to);
+    if (excludeWeekends !== undefined) params.set('excludeWeekends', String(excludeWeekends));
     const query = params.toString();
     return fetchJSON<StatisticsResponse>(`/api/statistics${query ? `?${query}` : ''}`);
   },

@@ -44,6 +44,15 @@ docker compose exec lighttracker node scripts/qa-test.js [url]  # Visual/functio
 
 Output: `screenshots/qa-{timestamp}/` with screenshots for desktop/tablet/mobile viewports and `qa-report.json`.
 
+### Debugging
+
+```bash
+docker compose logs -f                          # Real-time application logs
+docker compose ps                               # Check container health status
+docker compose exec lighttracker sh             # Access container shell
+docker compose exec lighttracker chromium --version  # Verify Chromium installation
+```
+
 ## Architecture Overview
 
 ```
@@ -120,17 +129,12 @@ The `frontend/` directory contains a Vue 3 + TypeScript SPA with glass-morphism 
 **Structure:**
 ```
 frontend/src/
-├── components/
-│   ├── current/     # GroupCard, CountdownAlert, SummaryCard, Timeline24Hour
-│   ├── history/     # ChangeTimeline, DateSelector, GroupHistoryDetail
-│   ├── layout/      # AppHeader, TabNavigation, StatusBar
-│   ├── statistics/  # ChartControls, OutageChart, GroupComparisonTable
-│   └── ui/          # Button, Card, Select, Tabs, Table, Badge, GlassCard, Toast
-├── composables/     # useSchedule, useStatistics, useHistory, useCountdown, useMyGroup, useToast, useStatus, useAnimation, useTimelineData
-├── stores/          # scheduleStore, statisticsStore, historyStore, uiStore, preferencesStore
-├── views/           # CurrentTab, HistoryTab, StatisticsTab
-├── services/        # api.ts, types.ts
-└── lib/             # utils.ts (cn() for Tailwind class merging)
+├── components/{current,history,statistics,layout,ui}/  # Feature-based organization
+├── composables/     # Shared logic (useSchedule, useCountdown, useMyGroup, etc.)
+├── stores/          # Pinia stores (schedule, statistics, history, ui, preferences)
+├── views/           # Tab views (CurrentTab, HistoryTab, StatisticsTab)
+├── services/        # api.ts client and types.ts (source of truth for all API types)
+└── lib/             # Utilities (cn() for Tailwind class merging)
 ```
 
 **Key patterns:**
@@ -186,6 +190,8 @@ The parser extracts data from Ukrainian text. Key patterns:
 - Schedule header: `/Графік погодинних відключень на (\d{2}\.\d{2}\.\d{4})/g`
 - Group with outages: `/Група (\d+\.\d+)\.\s*Електроенергії немає\s+(.+?)(?=Група|\n\n|$)/g`
 - Time intervals: `/з (\d{2}:\d{2}) до (\d{2}:\d{2})/g`
+
+**Source website notes:** Parser depends on https://poweron.loe.lviv.ua/ structure. If the source website changes its format, update regex patterns in `src/parser.js` and verify by examining Docker logs after rebuild.
 
 ### Telegram Bot Commands
 
@@ -314,12 +320,7 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 
 ## Deployment Notes
 
-**Environments:**
-
-| Environment | URL | Branch |
-|-------------|-----|--------|
-| Production | https://lighttracker.up.railway.app | main |
-| Staging | https://exciting-celebration-staging.up.railway.app | feature/ui-redesign |
+**Production:** https://lighttracker.up.railway.app (main branch)
 
 **Infrastructure:**
 - Docker uses system Chromium (`apt-get`) not bundled Puppeteer Chromium

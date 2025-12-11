@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/services/api'
-import type { StatisticsResponse, ChartType, GroupComparisonData, RecordStats } from '@/services/types'
+import type { StatisticsResponse, ChartType, GroupComparisonData, RecordStats, TimeOfDayAnalysis } from '@/services/types'
 
 export type ChartViewMode = 'daily' | 'records'
 
@@ -16,6 +16,8 @@ export const useStatisticsStore = defineStore('statistics', () => {
   const chartType = ref<ChartType>('percent')
   const chartViewMode = ref<ChartViewMode>('daily')
   const isLoading = ref(false)
+  const excludeWeekends = ref(false)
+  const timeOfDayData = ref<TimeOfDayAnalysis | null>(null) // Separate state for filtered time-of-day data
 
   // Getters
   const dailyStats = computed(() => {
@@ -29,6 +31,11 @@ export const useStatisticsStore = defineStore('statistics', () => {
 
   const summary = computed(() => {
     return statistics.value?.summary ?? null
+  })
+
+  // Time-of-day analysis - use filtered data if available, otherwise fall back to main statistics
+  const timeOfDayAnalysis = computed(() => {
+    return timeOfDayData.value ?? statistics.value?.timeOfDayAnalysis ?? null
   })
 
   // Helper for record label formatting
@@ -97,8 +104,8 @@ export const useStatisticsStore = defineStore('statistics', () => {
   const fetchStatistics = async (): Promise<void> => {
     isLoading.value = true
     try {
-      // Fetch ALL statistics - filtering is done client-side
-      const response = await api.getStatistics()
+      // Fetch ALL statistics with weekend filter applied
+      const response = await api.getStatistics(undefined, undefined, excludeWeekends.value)
       statistics.value = response
     } catch (error) {
       console.error('Failed to fetch statistics:', error)
@@ -117,17 +124,29 @@ export const useStatisticsStore = defineStore('statistics', () => {
     comparisonDateFrom.value = from
     comparisonDateTo.value = to
 
-    // Fetch filtered data for comparison table only
+    // Fetch filtered data for comparison table and time-of-day analysis
     if (from || to) {
       try {
-        const response = await api.getStatistics(from ?? undefined, to ?? undefined)
+        const response = await api.getStatistics(from ?? undefined, to ?? undefined, excludeWeekends.value)
         comparisonData.value = response.groupComparison
+        timeOfDayData.value = response.timeOfDayAnalysis
       } catch (error) {
         console.error('Failed to fetch comparison data:', error)
       }
     } else {
       // Reset to use main statistics data when no filter
       comparisonData.value = null
+      timeOfDayData.value = null
+    }
+  }
+
+  const setExcludeWeekends = async (exclude: boolean): Promise<void> => {
+    excludeWeekends.value = exclude
+    // Re-fetch all data with the new weekend filter setting
+    await fetchStatistics()
+    // Also re-fetch comparison data if there's a date range set
+    if (comparisonDateFrom.value || comparisonDateTo.value) {
+      await setComparisonDateRange(comparisonDateFrom.value, comparisonDateTo.value)
     }
   }
 
@@ -150,16 +169,20 @@ export const useStatisticsStore = defineStore('statistics', () => {
     chartType,
     chartViewMode,
     isLoading,
+    excludeWeekends,
+    timeOfDayData,
     // Getters
     dailyStats,
     groupComparison,
     summary,
     chartData,
+    timeOfDayAnalysis,
     // Actions
     fetchStatistics,
     setChartDateRange,
     setComparisonDateRange,
     setChartType,
-    setChartViewMode
+    setChartViewMode,
+    setExcludeWeekends
   }
 })

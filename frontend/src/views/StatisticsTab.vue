@@ -6,6 +6,7 @@ import {
   OutageChart,
   ComparisonDateRange,
   GroupComparisonTable,
+  TimeOfDaySection,
 } from '@/components/statistics'
 import { useStatistics } from '@/composables/useStatistics'
 
@@ -56,5 +57,8 @@ onMounted(async () => {
         :group-comparison="groupComparison"
       />
     </div>
+
+    <!-- Time-of-Day Impact Analysis Section -->
+    <TimeOfDaySection />
   </div>
 </template>

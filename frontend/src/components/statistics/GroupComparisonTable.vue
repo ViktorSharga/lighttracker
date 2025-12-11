@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Trophy, ArrowUpDown, TrendingUp } from 'lucide-vue-next'
+import { Trophy, ArrowUpDown, TrendingUp, ArrowUp, ArrowDown, Minus } from 'lucide-vue-next'
 import {
   Table,
   TableHeader,
@@ -29,27 +29,43 @@ const statisticsStore = useStatisticsStore()
 const uiStore = useUIStore()
 const { myGroup } = useMyGroup()
 
-// Sorting
-type SortKey = 'groupId' | 'averageMinutes' | 'totalMinutes' | 'daysCount' | 'rank'
+// Check if we have time-of-day analysis data
+const hasTimeOfDayData = computed(() => {
+  return statisticsStore.timeOfDayAnalysis !== null
+})
+
+const weightedGroupComparison = computed(() => {
+  return statisticsStore.timeOfDayAnalysis?.weightedGroupComparison ?? {}
+})
+
+// Sorting - extend with weighted fields
+type SortKey = 'groupId' | 'averageMinutes' | 'totalMinutes' | 'daysCount' | 'rank' | 'impactScore' | 'weightedRank'
 type SortOrder = 'asc' | 'desc'
 
 const sortKey = ref<SortKey>('rank')
 const sortOrder = ref<SortOrder>('asc')
 
-// Convert groupComparison object to sorted array
+// Convert groupComparison object to sorted array with weighted data
 const tableData = computed(() => {
-  const data = Object.entries(props.groupComparison).map(([groupId, stats]) => ({
-    groupId,
-    rank: stats.rank,
-    averageMinutes: stats.averageMinutes,
-    totalMinutes: stats.totalMinutes,
-    daysCount: stats.daysCount
-  }))
+  const data = Object.entries(props.groupComparison).map(([groupId, stats]) => {
+    const weightedStats = weightedGroupComparison.value[groupId]
+    return {
+      groupId,
+      rank: stats.rank,
+      averageMinutes: stats.averageMinutes,
+      totalMinutes: stats.totalMinutes,
+      daysCount: stats.daysCount,
+      // Weighted fields (may be undefined if no time-of-day data)
+      impactScore: weightedStats?.impactScore ?? null,
+      weightedRank: weightedStats?.weightedRank ?? null,
+      weightedAverageMinutes: weightedStats?.weightedAverageMinutes ?? null
+    }
+  })
 
   // Sort data
   const sorted = [...data].sort((a, b) => {
-    let aVal: string | number
-    let bVal: string | number
+    let aVal: string | number | null
+    let bVal: string | number | null
 
     switch (sortKey.value) {
       case 'groupId':
@@ -67,6 +83,14 @@ const tableData = computed(() => {
       case 'daysCount':
         aVal = a.daysCount
         bVal = b.daysCount
+        break
+      case 'impactScore':
+        aVal = a.impactScore ?? 0
+        bVal = b.impactScore ?? 0
+        break
+      case 'weightedRank':
+        aVal = a.weightedRank ?? a.rank
+        bVal = b.weightedRank ?? b.rank
         break
       case 'rank':
       default:
@@ -140,14 +164,43 @@ const formatMinutes = (minutes: number): string => {
   }
 }
 
-// Column definitions
-const columns = [
+// Get impact score color classes (green = low impact, red = high impact)
+const getImpactScoreClasses = (score: number): string => {
+  if (score <= 30) return 'bg-accent-green/20 text-accent-green border-accent-green/30'
+  if (score <= 60) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+  if (score <= 80) return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+  return 'bg-accent-red/20 text-accent-red border-accent-red/30'
+}
+
+// Get rank difference indicator
+const getRankDifference = (rawRank: number, weightedRank: number | null) => {
+  if (weightedRank === null) return null
+  const diff = rawRank - weightedRank
+  if (diff > 0) return { direction: 'up', value: diff }
+  if (diff < 0) return { direction: 'down', value: Math.abs(diff) }
+  return { direction: 'same', value: 0 }
+}
+
+// Column definitions - base columns, impact columns added conditionally
+const baseColumns = [
   { key: 'rank', label: '#', sortable: false },
   { key: 'groupId', label: 'Група', sortable: true },
   { key: 'averageMinutes', label: 'Середнє', sortable: true },
   { key: 'totalMinutes', label: 'Всього', sortable: true },
   { key: 'daysCount', label: 'Днів', sortable: true }
 ] as const
+
+const impactColumns = [
+  { key: 'impactScore', label: 'Вплив', sortable: true },
+  { key: 'weightedRank', label: 'Зважений #', sortable: true }
+] as const
+
+const columns = computed(() => {
+  if (hasTimeOfDayData.value) {
+    return [...baseColumns, ...impactColumns]
+  }
+  return [...baseColumns]
+})
 </script>
 
 <template>
@@ -255,6 +308,50 @@ const columns = [
               </div>
               <div class="text-xs text-gray-400">
                 {{ row.daysCount === 1 ? 'день' : row.daysCount < 5 ? 'дні' : 'днів' }}
+              </div>
+            </TableCell>
+
+            <!-- Impact Score (conditional) -->
+            <TableCell v-if="hasTimeOfDayData && row.impactScore !== null">
+              <Badge
+                :class="cn(
+                  'inline-flex items-center gap-1 border font-medium',
+                  getImpactScoreClasses(row.impactScore)
+                )"
+              >
+                {{ row.impactScore }}%
+              </Badge>
+            </TableCell>
+
+            <!-- Weighted Rank (conditional) -->
+            <TableCell v-if="hasTimeOfDayData && row.weightedRank !== null">
+              <div class="flex items-center gap-2">
+                <Badge
+                  :class="cn(
+                    'inline-flex items-center gap-1.5 border',
+                    getRankClasses(row.weightedRank)
+                  )"
+                >
+                  <component :is="getRankIcon(row.weightedRank)" :size="12" />
+                  {{ row.weightedRank }}
+                </Badge>
+                <!-- Rank difference indicator -->
+                <span
+                  v-if="getRankDifference(row.rank, row.weightedRank)"
+                  :class="cn(
+                    'flex items-center gap-0.5 text-xs',
+                    getRankDifference(row.rank, row.weightedRank)?.direction === 'up' && 'text-accent-green',
+                    getRankDifference(row.rank, row.weightedRank)?.direction === 'down' && 'text-accent-red',
+                    getRankDifference(row.rank, row.weightedRank)?.direction === 'same' && 'text-gray-400'
+                  )"
+                >
+                  <ArrowUp v-if="getRankDifference(row.rank, row.weightedRank)?.direction === 'up'" :size="12" />
+                  <ArrowDown v-else-if="getRankDifference(row.rank, row.weightedRank)?.direction === 'down'" :size="12" />
+                  <Minus v-else :size="12" />
+                  <span v-if="getRankDifference(row.rank, row.weightedRank)?.value">
+                    {{ getRankDifference(row.rank, row.weightedRank)?.value }}
+                  </span>
+                </span>
               </div>
             </TableCell>
           </TableRow>

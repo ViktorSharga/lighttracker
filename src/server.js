@@ -95,10 +95,18 @@ app.get('/api/history/:dateKey', (req, res) => {
 
 // API: Get statistics
 app.get('/api/statistics', (req, res) => {
-  const { from, to } = req.query;
+  const { from, to, excludeWeekends } = req.query;
   const schedulesByDate = getAllSchedules();
 
-  const statistics = calculateStatistics(schedulesByDate, from || null, to || null);
+  // Parse excludeWeekends as boolean (query params are strings)
+  const excludeWeekendsFlag = excludeWeekends === 'true' || excludeWeekends === '1';
+
+  const statistics = calculateStatistics(
+    schedulesByDate,
+    from || null,
+    to || null,
+    excludeWeekendsFlag
+  );
 
   res.json(statistics);
 });

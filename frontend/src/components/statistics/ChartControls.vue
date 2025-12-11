@@ -4,6 +4,7 @@ import { Calendar } from 'lucide-vue-next'
 import GlassCard from '@/components/ui/GlassCard.vue'
 import Input from '@/components/ui/Input.vue'
 import Button from '@/components/ui/Button.vue'
+import WeekendToggle from './WeekendToggle.vue'
 import { useStatisticsStore } from '@/stores/statisticsStore'
 
 const statisticsStore = useStatisticsStore()
@@ -193,6 +194,11 @@ const isRecordsActive = computed(() => statisticsStore.chartViewMode === 'record
             Весь час
           </button>
         </div>
+      </div>
+
+      <!-- Weekend Filter -->
+      <div class="pt-2 border-t border-white/10">
+        <WeekendToggle />
       </div>
     </div>
   </GlassCard>
