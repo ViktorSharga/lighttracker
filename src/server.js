@@ -7,6 +7,9 @@ const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate, getAl
 const { compareSchedules, buildDaySummary, calculateStatistics } = require('./comparator');
 const { initTelegramBot, notifySubscribers, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
 
+// All possible groups
+const ALL_GROUPS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2'];
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const FETCH_INTERVAL_MS = parseInt(process.env.FETCH_INTERVAL_MS) || 300000; // 5 minutes
@@ -195,6 +198,8 @@ async function performFetch() {
   isFetching = true;
   lastFetchError = null;
 
+  const { dateKey: todayKey, scheduleDate: todayScheduleDate } = getTodayDates();
+
   try {
     console.log(`[${new Date().toISOString()}] Fetching schedule...`);
 
@@ -228,6 +233,19 @@ async function performFetch() {
       }
     }
 
+    // Check if we found a schedule for today
+    const hasTodayScheduleFromSource = schedules.some(
+      s => getDateKey(s.scheduleDate) === todayKey
+    );
+
+    // If no schedule for today from source, check if we need to create a "no outages" schedule
+    if (!hasTodayScheduleFromSource) {
+      const noOutagesResult = await ensureTodayHasSchedule(todayKey, todayScheduleDate, results);
+      if (noOutagesResult) {
+        results.push(noOutagesResult);
+      }
+    }
+
     lastFetchTime = new Date().toISOString();
     console.log(`[${lastFetchTime}] Fetch complete.`);
 
@@ -235,10 +253,62 @@ async function performFetch() {
   } catch (err) {
     lastFetchError = err.message;
     console.error(`[${new Date().toISOString()}] Fetch error:`, err.message);
+
+    // Even if fetch fails, ensure today has a schedule (no outages = good day!)
+    try {
+      const noOutagesResult = await ensureTodayHasSchedule(todayKey, todayScheduleDate);
+      if (noOutagesResult) {
+        console.log(`[${new Date().toISOString()}] Created no-outages schedule despite fetch error`);
+      }
+    } catch (noOutagesErr) {
+      console.error('Error creating no-outages schedule:', noOutagesErr.message);
+    }
+
     throw err;
   } finally {
     isFetching = false;
   }
+}
+
+// Ensure today has a schedule - create "no outages" schedule if none exists
+async function ensureTodayHasSchedule(todayKey, todayScheduleDate, results = []) {
+  const existingSchedules = getSchedulesForDate(todayKey);
+
+  if (existingSchedules.length > 0) {
+    console.log(`[${new Date().toISOString()}] Today (${todayKey}) already has ${existingSchedules.length} schedule(s), skipping no-outages creation`);
+    return null;
+  }
+
+  console.log(`[${new Date().toISOString()}] No schedule found for today (${todayKey}), creating no-outages schedule`);
+
+  const noOutagesSchedule = createNoOutagesSchedule(todayScheduleDate);
+
+  // Get previous schedule (from yesterday or earlier) for notifications
+  const { current: prevSchedule } = getLatestSchedules();
+
+  const result = addSchedule(noOutagesSchedule);
+
+  if (result.added) {
+    console.log(`  - ${todayScheduleDate}: added=${result.added}, isNewDay=${result.isNewDay}, isNoOutages=true`);
+
+    // Notify subscribers about the no-outages day
+    if (TELEGRAM_BOT_TOKEN) {
+      const { current: newSchedule } = getLatestSchedules(result.dateKey);
+      notifySubscribers(prevSchedule, newSchedule, result.isNewDay).catch(err => {
+        console.error('Error notifying subscribers about no-outages schedule:', err);
+      });
+    }
+
+    return {
+      date: todayScheduleDate,
+      added: result.added,
+      reason: result.reason,
+      isNewDay: result.isNewDay,
+      isNoOutagesSchedule: true
+    };
+  }
+
+  return null;
 }
 
 // Helper to get date key from schedule date
@@ -246,6 +316,38 @@ function getDateKey(scheduleDate) {
   if (!scheduleDate) return null;
   const [day, month, year] = scheduleDate.split('.');
   return `${year}-${month}-${day}`;
+}
+
+// Get today's date in both formats used by the app
+function getTodayDates() {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+
+  return {
+    dateKey: `${year}-${month}-${day}`,        // YYYY-MM-DD (storage key)
+    scheduleDate: `${day}.${month}.${year}`    // DD.MM.YYYY (display format)
+  };
+}
+
+// Create a schedule with no outages for all groups (100% light)
+function createNoOutagesSchedule(scheduleDate) {
+  const groups = {};
+  for (const groupId of ALL_GROUPS) {
+    groups[groupId] = {
+      intervalsText: '',
+      intervals: [],
+      totalMinutesOff: 0
+    };
+  }
+
+  return {
+    scheduleDate,
+    infoTimestamp: new Date().toISOString(),
+    groups,
+    isNoOutagesSchedule: true  // Flag to identify auto-generated schedules
+  };
 }
 
 // Start periodic fetching
