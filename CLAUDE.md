@@ -44,6 +44,12 @@ docker compose exec lighttracker node scripts/qa-test.js [url]  # Visual/functio
 
 Output: `screenshots/qa-{timestamp}/` with screenshots for desktop/tablet/mobile viewports and `qa-report.json`.
 
+### Quick Screenshot (via Docker)
+
+```bash
+docker compose exec lighttracker node scripts/screenshot.js [url]  # Single screenshot of current state
+```
+
 ### Debugging
 
 ```bash
@@ -141,7 +147,7 @@ frontend/src/
 - Pinia stores with composition API (`stores/`)
 - Radix Vue components wrapped in `components/ui/` with Tailwind styling
 - GSAP for tab indicator animation (not CSS transitions)
-- Composables for shared logic (`composables/`)
+- Composables for shared logic (`composables/`): useSchedule, useCountdown, useMyGroup, useHistory, useStatistics, useStatus, useToast, useAnimation, useTimelineData
 - Separate date range filters for chart vs group comparison table
 - All user-facing text in Ukrainian
 - Import UI components from `@/components/ui`
@@ -232,6 +238,22 @@ The parser extracts data from Ukrainian text. Key patterns:
 
 Change status values: `'worse'` | `'better'` | `'unchanged'`
 
+### Statistics with Time-of-Day Analysis
+```javascript
+// GET /api/statistics includes timeOfDayAnalysis with:
+{
+  timeOfDayAnalysis: {
+    weightedGroupComparison: { "1.1": { impactScore, weightedRank, ... } },
+    hourlyHeatmap: { groups, hours, data[][] },  // For heatmap visualization
+    timeSlotDistribution: { "1.1": { night, morning, daytime, primeTime, lateEvening } },
+    fairnessMetrics: { raw, weighted, fairnessScore, weightedFairnessScore },
+    timeSlots: [{ id, label, startHour, endHour, weight, color }]
+  }
+}
+// Time slots: night (00-06, 0.5x), morning (06-09, 1.5x), daytime (09-17, 1.0x),
+// primeTime (17-22, 2.0x), lateEvening (22-24, 1.2x)
+```
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -240,7 +262,7 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | GET | `/api/dates` | All date keys with data (sorted descending) |
 | GET | `/api/schedule/:dateKey` | Full history for specific date |
 | GET | `/api/history/:dateKey` | Day summary with change timeline |
-| GET | `/api/statistics?from=&to=` | Multi-day stats with optional date range |
+| GET | `/api/statistics?from=&to=&excludeWeekends=` | Multi-day stats with optional date range, includes time-of-day fairness analysis |
 | GET | `/api/export` | Export all schedules (for data transfer between instances) |
 | GET | `/api/status` | App status, version, Telegram subscriber counts |
 | GET | `/health` | Health check endpoint (returns 200 OK when ready) |

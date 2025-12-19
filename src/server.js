@@ -203,7 +203,20 @@ async function performFetch() {
   try {
     console.log(`[${new Date().toISOString()}] Fetching schedule...`);
 
-    const { text } = await fetchSchedulePage();
+    const { text, noOutages } = await fetchSchedulePage();
+
+    // If source explicitly has no outages (page loaded but no schedule data)
+    if (noOutages) {
+      console.log(`[${new Date().toISOString()}] Source indicates no outages scheduled`);
+      const noOutagesResult = await ensureTodayHasSchedule(todayKey, todayScheduleDate);
+      lastFetchTime = new Date().toISOString();
+      return {
+        success: true,
+        schedules: noOutagesResult ? [noOutagesResult] : [],
+        noOutages: true
+      };
+    }
+
     const schedules = parseAllSchedules(text);
 
     console.log(`[${new Date().toISOString()}] Found ${schedules.length} schedule(s) on page`);

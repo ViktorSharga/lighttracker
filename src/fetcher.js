@@ -54,13 +54,29 @@ async function fetchSchedulePage() {
     // Wait for content to load (React app renders into #root)
     await page.waitForSelector('#root', { timeout: 10000 });
 
-    // Give React a moment to render
-    await page.waitForFunction(
-      () => document.querySelector('#root')?.innerText?.includes('Група'),
-      { timeout: 15000 }
-    );
+    // Wait for React to render - either schedule data or empty state
+    // Check for "Група" (schedule present) or wait for page to stabilize
+    const hasSchedule = await page.waitForFunction(
+      () => {
+        const root = document.querySelector('#root');
+        if (!root) return false;
+        const text = root.innerText || '';
+        // Schedule data present
+        if (text.includes('Група')) return 'schedule';
+        // Page loaded but no schedule - check for common "no data" indicators
+        // or if the page has rendered something substantial
+        if (text.includes('немає') || text.includes('відсутн') || text.length > 50) return 'no-schedule';
+        return false;
+      },
+      { timeout: 30000 }
+    ).then(handle => handle.jsonValue()).catch(() => null);
 
     const text = await page.evaluate(() => document.body.innerText);
+
+    // If no schedule data, return indicator for parser to handle
+    if (hasSchedule === 'no-schedule' && !text.includes('Група')) {
+      return { text, noOutages: true };
+    }
 
     return { text };
   } finally {
