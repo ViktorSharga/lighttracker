@@ -46,6 +46,8 @@ async function getEcoFlowCredentials() {
   const loginUrl = `https://${ECOFLOW_API_HOST}/auth/login`;
   const certUrl = `https://${ECOFLOW_API_HOST}/iot-auth/app/certification`;
 
+  console.log(`[EcoFlow] Authenticating via ${ECOFLOW_API_HOST}...`);
+
   // Step 1: Login to get bearer token
   const loginBody = {
     os: 'linux',
@@ -84,6 +86,8 @@ async function getEcoFlowCredentials() {
     throw new Error('No token received from login');
   }
 
+  console.log('[EcoFlow] Login successful, fetching MQTT credentials...');
+
   // Step 2: Get MQTT certification
   const certResponse = await fetch(certUrl, {
     method: 'GET',
@@ -103,10 +107,14 @@ async function getEcoFlowCredentials() {
     throw new Error(`Certification error: ${certData.message || 'Unknown error'}`);
   }
 
+  const mqttUrl = certData.data?.url;
+  const mqttPort = certData.data?.port || 8883;
+  console.log(`[EcoFlow] MQTT broker: ${mqttUrl}:${mqttPort}`);
+
   return {
     protocol: certData.data?.protocol || 'mqtts',
-    url: certData.data?.url,
-    port: certData.data?.port || 8883,
+    url: mqttUrl,
+    port: mqttPort,
     username: certData.data?.certificateAccount,
     password: certData.data?.certificatePassword
   };
