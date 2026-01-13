@@ -189,6 +189,7 @@ Design and test UI for these primary devices:
 | `src/storage.js` | JSON file persistence, duplicate detection |
 | `src/comparator.js` | Schedule diff, statistics calculation |
 | `src/telegram.js` | Bot integration, per-group notifications |
+| `src/ecoflow.js` | EcoFlow RIVER 3 MQTT integration for grid status (optional) |
 
 ### Parser Regex Patterns
 
@@ -265,6 +266,7 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | GET | `/api/statistics?from=&to=&excludeWeekends=` | Multi-day stats with optional date range, includes time-of-day fairness analysis |
 | GET | `/api/export` | Export all schedules (for data transfer between instances) |
 | GET | `/api/status` | App status, version, Telegram subscriber counts |
+| GET | `/api/grid-status` | Real-time grid status from EcoFlow RIVER 3 (if configured) |
 | GET | `/health` | Health check endpoint (returns 200 OK when ready) |
 | POST | `/api/fetch` | Trigger immediate fetch (returns 409 if already fetching) |
 | POST | `/api/schedule/import` | Import single schedule record |
@@ -281,6 +283,9 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | `DATA_DIR` | /app/data (Docker) or ./data | Persistent storage directory |
 | `PUPPETEER_EXECUTABLE_PATH` | - | Custom Chromium path (set in Docker) |
 | `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` | - | Skip bundled Chromium (Docker uses system) |
+| `ECOFLOW_EMAIL` | - | EcoFlow account email (optional, for grid status) |
+| `ECOFLOW_PASSWORD` | - | EcoFlow account password (optional) |
+| `ECOFLOW_DEVICE_SN` | - | RIVER 3 serial number from EcoFlow app |
 
 ## Conventions
 

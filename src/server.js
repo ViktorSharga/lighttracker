@@ -6,6 +6,7 @@ const { parseAllSchedules } = require('./parser');
 const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate, getAllSchedules, importSchedule, deleteSchedule } = require('./storage');
 const { compareSchedules, buildDaySummary, calculateStatistics } = require('./comparator');
 const { initTelegramBot, notifySubscribers, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
+const { initEcoFlow, getGridStatus } = require('./ecoflow');
 
 // All possible groups
 const ALL_GROUPS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2'];
@@ -190,6 +191,11 @@ app.get('/api/status', (req, res) => {
       byGroup: getSubscribersByGroup()
     }
   });
+});
+
+// API: Get grid status from EcoFlow RIVER 3
+app.get('/api/grid-status', (req, res) => {
+  res.json(getGridStatus());
 });
 
 async function performFetch() {
@@ -390,12 +396,16 @@ app.get('*', (req, res, next) => {
   res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`LightTracker v${VERSION} running on http://localhost:${PORT}`);
   if (TELEGRAM_BOT_TOKEN) {
     console.log('Telegram bot enabled');
   } else {
     console.log('Telegram bot disabled (no token provided)');
   }
+
+  // Initialize EcoFlow grid status monitoring (optional)
+  await initEcoFlow();
+
   startPeriodicFetch();
 });
