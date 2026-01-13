@@ -6,6 +6,7 @@
  */
 
 const mqtt = require('mqtt');
+const protobuf = require('protobufjs');
 
 // State
 let mqttClient = null;
@@ -125,37 +126,138 @@ async function getEcoFlowCredentials() {
  */
 function handleMessage(topic, payload) {
   try {
-    const data = JSON.parse(payload.toString());
-
-    // Debug: log which fields we're receiving (keys only, not values)
-    if (data.params) {
-      const keys = Object.keys(data.params);
-      console.log(`[EcoFlow] Received ${keys.length} params: ${keys.slice(0, 5).join(', ')}${keys.length > 5 ? '...' : ''}`);
+    // Try JSON first
+    const raw = payload.toString();
+    if (raw.startsWith('{')) {
+      const data = JSON.parse(raw);
+      processData(data);
+      return;
     }
 
-    // SECURITY: Only extract the one field we need
-    // Ignore all other device data (battery, power, etc.)
-    // Try multiple possible field names for AC connection
-    const acField = data.params?.plugInInfoAcInFlag
-      ?? data.params?.acInFlag
-      ?? data.params?.['inv.acInFlag']
-      ?? data.params?.['pd.acAutoOnCfg'];
-
-    if (acField !== undefined) {
-      const newStatus = acField === 1 ? 'online' : 'offline';
-
-      if (newStatus !== gridStatus) {
-        console.log(`[EcoFlow] Grid status changed: ${gridStatus} → ${newStatus}`);
-        gridStatus = newStatus;
-      }
-
-      lastUpdate = new Date().toISOString();
-    }
-    // All other fields silently ignored
+    // Decode protobuf message
+    const reader = protobuf.Reader.create(payload);
+    const decoded = decodeProtobuf(reader, payload.length);
+    processData(decoded);
   } catch (err) {
-    // Don't log raw payload for security
-    console.error('[EcoFlow] Failed to parse message');
+    // Silently ignore decode errors (common with binary messages)
   }
+}
+
+/**
+ * Manually decode protobuf wire format
+ */
+function decodeProtobuf(reader, len) {
+  const result = {};
+  const end = reader.pos + len;
+
+  while (reader.pos < end) {
+    const tag = reader.uint32();
+    const fieldNum = tag >>> 3;
+    const wireType = tag & 7;
+
+    switch (wireType) {
+      case 0: // Varint
+        result[`f${fieldNum}`] = reader.uint64().toNumber();
+        break;
+      case 1: // 64-bit
+        result[`f${fieldNum}`] = reader.double();
+        break;
+      case 2: // Length-delimited (string, bytes, or embedded message)
+        const bytes = reader.bytes();
+        // Try to decode as nested message
+        try {
+          const nested = decodeProtobuf(protobuf.Reader.create(bytes), bytes.length);
+          result[`f${fieldNum}`] = nested;
+        } catch {
+          // Try as string
+          const str = bytes.toString('utf8');
+          if (str.match(/^[\x20-\x7E]*$/)) {
+            result[`f${fieldNum}`] = str;
+          } else {
+            result[`f${fieldNum}`] = bytes.toString('hex');
+          }
+        }
+        break;
+      case 5: // 32-bit
+        result[`f${fieldNum}`] = reader.float();
+        break;
+      default:
+        reader.skipType(wireType);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Process decoded data and extract grid status
+ */
+function processData(data) {
+  if (!data) return;
+
+  // Search for AC-related fields in decoded protobuf
+  // f1.f11 and f1.f4 are indicators in RIVER 3 messages
+  const allFields = collectAllFields(data);
+
+  const f11 = allFields['f1.f11'];
+  const f4 = allFields['f1.f4'];
+  const f61 = findField(data, ['f61', 'f202', 'f47']);
+
+  // Use first available indicator
+  const acIndicator = f61 ?? f11 ?? f4;
+
+  if (acIndicator !== undefined) {
+    const newStatus = acIndicator === 1 || acIndicator > 0 ? 'online' : 'offline';
+
+    if (newStatus !== gridStatus) {
+      console.log(`[EcoFlow] Grid status changed: ${newStatus}`);
+      gridStatus = newStatus;
+    }
+
+    lastUpdate = new Date().toISOString();
+  }
+}
+
+/**
+ * Recursively search for a field in nested object
+ */
+function findField(obj, fieldNames, depth = 0) {
+  if (!obj || typeof obj !== 'object' || depth > 5) return undefined;
+
+  for (const name of fieldNames) {
+    if (obj[name] !== undefined) {
+      return obj[name];
+    }
+  }
+
+  // Search in nested objects/arrays
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (typeof val === 'object') {
+      const found = findField(val, fieldNames, depth + 1);
+      if (found !== undefined) return found;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Collect all fields from nested object with flattened paths
+ */
+function collectAllFields(obj, prefix = '', result = {}, depth = 0) {
+  if (!obj || typeof obj !== 'object' || depth > 5) return result;
+
+  for (const [key, val] of Object.entries(obj)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (typeof val === 'object' && val !== null) {
+      collectAllFields(val, path, result, depth + 1);
+    } else {
+      result[path] = val;
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -200,6 +302,24 @@ async function connectMQTT(credentials) {
         console.error('[EcoFlow] Failed to subscribe to topic');
       } else {
         console.log(`[EcoFlow] Subscribed to device ${maskSN(ECOFLOW_DEVICE_SN)}`);
+
+        // Send a get command to request current status
+        const getTopic = `/app/${userId}/${ECOFLOW_DEVICE_SN}/thing/property/get`;
+        const getPayload = JSON.stringify({
+          from: 'ios',
+          operateType: 'latestQuotas',
+          id: Date.now().toString(),
+          lang: 'en-us',
+          params: {},
+          version: '1.0'
+        });
+        mqttClient.publish(getTopic, getPayload, (pubErr) => {
+          if (pubErr) {
+            console.error('[EcoFlow] Failed to request device status');
+          } else {
+            console.log('[EcoFlow] Requested device status');
+          }
+        });
       }
     });
   });
