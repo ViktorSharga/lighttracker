@@ -127,10 +127,22 @@ function handleMessage(topic, payload) {
   try {
     const data = JSON.parse(payload.toString());
 
+    // Debug: log which fields we're receiving (keys only, not values)
+    if (data.params) {
+      const keys = Object.keys(data.params);
+      console.log(`[EcoFlow] Received ${keys.length} params: ${keys.slice(0, 5).join(', ')}${keys.length > 5 ? '...' : ''}`);
+    }
+
     // SECURITY: Only extract the one field we need
     // Ignore all other device data (battery, power, etc.)
-    if (data.params && 'plugInInfoAcInFlag' in data.params) {
-      const newStatus = data.params.plugInInfoAcInFlag === 1 ? 'online' : 'offline';
+    // Try multiple possible field names for AC connection
+    const acField = data.params?.plugInInfoAcInFlag
+      ?? data.params?.acInFlag
+      ?? data.params?.['inv.acInFlag']
+      ?? data.params?.['pd.acAutoOnCfg'];
+
+    if (acField !== undefined) {
+      const newStatus = acField === 1 ? 'online' : 'offline';
 
       if (newStatus !== gridStatus) {
         console.log(`[EcoFlow] Grid status changed: ${gridStatus} → ${newStatus}`);
