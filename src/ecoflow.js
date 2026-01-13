@@ -390,15 +390,16 @@ function updateGridStatus(newStatus, source) {
       }
     }
 
-    // Trigger callback when power goes offline (from online or unknown state)
-    // Skip if previousStatus was already offline (duplicate detection)
-    if (newStatus === 'offline' && previousStatus !== 'offline' && onGridOfflineCallback) {
-      try {
-        onGridOfflineCallback();
-      } catch (err) {
-        console.error('[EcoFlow] Error in onGridOffline callback:', err.message);
-      }
-    }
+    // NOTE: Offline notifications disabled - f2.f4 field unreliable for RIVER 3
+    // The field triggers on inverter state changes, not actual grid status
+    // TODO: Re-enable when EcoFlow Developer API provides reliable AC input status
+    // if (newStatus === 'offline' && previousStatus !== 'offline' && onGridOfflineCallback) {
+    //   try {
+    //     onGridOfflineCallback();
+    //   } catch (err) {
+    //     console.error('[EcoFlow] Error in onGridOffline callback:', err.message);
+    //   }
+    // }
   }
   lastUpdate = new Date().toISOString();
 }
