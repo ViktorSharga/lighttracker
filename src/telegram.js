@@ -476,9 +476,61 @@ function getSubscribersByGroup() {
   return byGroup;
 }
 
+/**
+ * Notify subscribers when power returns earlier than scheduled
+ * @param {string} group - The group that got power back early
+ * @param {string} scheduledEnd - When outage was supposed to end (HH:MM)
+ * @param {string} actualTime - When power actually returned (HH:MM)
+ */
+async function notifyEarlyPowerReturn(group, scheduledEnd, actualTime) {
+  if (!bot) return;
+
+  const subscribers = loadSubscribers();
+  const chatIds = Object.keys(subscribers);
+
+  // Only notify subscribers of this specific group
+  const targetChats = chatIds.filter(id => subscribers[id].group === group);
+  if (targetChats.length === 0) return;
+
+  // Calculate minutes early
+  const toMinutes = (t) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const minutesEarly = toMinutes(scheduledEnd) - toMinutes(actualTime);
+  const hoursEarly = Math.floor(minutesEarly / 60);
+  const minsEarly = minutesEarly % 60;
+  const earlyText = hoursEarly > 0
+    ? `${hoursEarly} год ${minsEarly} хв`
+    : `${minsEarly} хв`;
+
+  console.log(`[Telegram] Notifying ${targetChats.length} subscribers about early power return for group ${group}`);
+
+  const message =
+    `🎉 *Світло повернулося раніше!*\n\n` +
+    `⚡ *Група ${group}*\n` +
+    `Заплановано до: ${scheduledEnd}\n` +
+    `Повернулось: ${actualTime}\n` +
+    `⏱ На ${earlyText} раніше`;
+
+  for (const chatId of targetChats) {
+    try {
+      await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    } catch (err) {
+      console.error(`Failed to notify chat ${chatId}:`, err.message);
+      if (err.response?.statusCode === 403 || err.response?.statusCode === 400) {
+        delete subscribers[chatId];
+        saveSubscribers(subscribers);
+        console.log(`Removed inactive subscriber: ${chatId}`);
+      }
+    }
+  }
+}
+
 module.exports = {
   initTelegramBot,
   notifySubscribers,
+  notifyEarlyPowerReturn,
   getSubscriberCount,
   getSubscribersByGroup
 };

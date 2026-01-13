@@ -7,6 +7,7 @@ import type {
   StatisticsResponse,
   StatusResponse,
   FetchResponse,
+  GridStatusResponse,
 } from './types';
 
 const BASE_URL = '';  // Uses Vite proxy
@@ -48,6 +49,10 @@ export const api = {
   // Status endpoint
   getStatus: () =>
     fetchJSON<StatusResponse>('/api/status'),
+
+  // Grid status endpoint (EcoFlow integration)
+  getGridStatus: (limit?: number) =>
+    fetchJSON<GridStatusResponse>(`/api/grid-status${limit ? `?limit=${limit}` : ''}`),
 
   // Force fetch endpoint
   forceFetch: async (): Promise<FetchResponse> => {

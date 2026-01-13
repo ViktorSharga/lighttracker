@@ -147,7 +147,7 @@ frontend/src/
 - Pinia stores with composition API (`stores/`)
 - Radix Vue components wrapped in `components/ui/` with Tailwind styling
 - GSAP for tab indicator animation (not CSS transitions)
-- Composables for shared logic (`composables/`): useSchedule, useCountdown, useMyGroup, useHistory, useStatistics, useStatus, useToast, useAnimation, useTimelineData
+- Composables for shared logic (`composables/`): useSchedule, useCountdown, useMyGroup, useHistory, useStatistics, useStatus, useGridStatus, useToast, useAnimation, useTimelineData
 - Separate date range filters for chart vs group comparison table
 - All user-facing text in Ukrainian
 - Import UI components from `@/components/ui`
@@ -190,6 +190,7 @@ Design and test UI for these primary devices:
 | `src/comparator.js` | Schedule diff, statistics calculation |
 | `src/telegram.js` | Bot integration, per-group notifications |
 | `src/ecoflow.js` | EcoFlow RIVER 3 MQTT integration for grid status (optional) |
+| `src/grid-storage.js` | Grid status history persistence with schedule references |
 
 ### EcoFlow Integration Details
 
@@ -206,6 +207,16 @@ The EcoFlow module connects to EcoFlow's MQTT broker to receive real-time device
 - This differs from the official `plugInInfoAcInFlag` (field 61) which appears in `DisplayPropertyUpload` messages
 
 **Topic:** `/app/device/property/{deviceSN}` receives periodic status updates (~every 30s)
+
+**Grid Status History:** Status changes are recorded to `data/grid-status.json` with:
+- ISO timestamp of the change
+- Status value (`online`, `offline`, `unknown`)
+- Reference to active schedule (dateKey + fetchedAt) for correlation with outage schedules
+
+**Early Power Return Notifications:** When `ECOFLOW_GROUP` is configured and power returns while within a scheduled outage interval, subscribers of that group receive a Telegram notification showing:
+- Scheduled end time
+- Actual return time
+- Minutes early (e.g., "На 45 хв раніше")
 
 ### Parser Regex Patterns
 
@@ -282,7 +293,7 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | GET | `/api/statistics?from=&to=&excludeWeekends=` | Multi-day stats with optional date range, includes time-of-day fairness analysis |
 | GET | `/api/export` | Export all schedules (for data transfer between instances) |
 | GET | `/api/status` | App status, version, Telegram subscriber counts |
-| GET | `/api/grid-status` | Real-time grid status from EcoFlow RIVER 3 (if configured) |
+| GET | `/api/grid-status?limit=N` | Real-time grid status + history from EcoFlow RIVER 3 (if configured) |
 | GET | `/health` | Health check endpoint (returns 200 OK when ready) |
 | POST | `/api/fetch` | Trigger immediate fetch (returns 409 if already fetching) |
 | POST | `/api/schedule/import` | Import single schedule record |
@@ -302,6 +313,7 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | `ECOFLOW_EMAIL` | - | EcoFlow account email (optional, for grid status) |
 | `ECOFLOW_PASSWORD` | - | EcoFlow account password (optional) |
 | `ECOFLOW_DEVICE_SN` | - | RIVER 3 serial number from EcoFlow app |
+| `ECOFLOW_GROUP` | - | Power group where EcoFlow device is located (e.g., "4.1") |
 
 ## Conventions
 

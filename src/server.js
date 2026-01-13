@@ -5,8 +5,9 @@ const { fetchSchedulePage } = require('./fetcher');
 const { parseAllSchedules } = require('./parser');
 const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate, getAllSchedules, importSchedule, deleteSchedule } = require('./storage');
 const { compareSchedules, buildDaySummary, calculateStatistics } = require('./comparator');
-const { initTelegramBot, notifySubscribers, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
+const { initTelegramBot, notifySubscribers, notifyEarlyPowerReturn, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
 const { initEcoFlow, getGridStatus } = require('./ecoflow');
+const { getRecentGridStatusHistory } = require('./grid-storage');
 
 // All possible groups
 const ALL_GROUPS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2'];
@@ -23,6 +24,57 @@ const VERSION = fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').t
 let lastFetchTime = null;
 let lastFetchError = null;
 let isFetching = false;
+
+// EcoFlow group for early power return notifications
+const ECOFLOW_GROUP = process.env.ECOFLOW_GROUP;
+
+// Helper: Check if time is within interval
+function isTimeInInterval(timeStr, interval) {
+  const toMinutes = (t) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const now = toMinutes(timeStr);
+  const start = toMinutes(interval.start);
+  const end = toMinutes(interval.end);
+  return now >= start && now < end;
+}
+
+// Helper: Get current time as HH:MM
+function getCurrentTime() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
+// Callback for when grid comes back online
+function handleGridOnline() {
+  if (!ECOFLOW_GROUP) {
+    console.log('[EcoFlow] No ECOFLOW_GROUP configured, skipping early return check');
+    return;
+  }
+
+  const { current: schedule } = getLatestSchedules();
+  if (!schedule || !schedule.groups[ECOFLOW_GROUP]) {
+    console.log(`[EcoFlow] No schedule data for group ${ECOFLOW_GROUP}`);
+    return;
+  }
+
+  const groupData = schedule.groups[ECOFLOW_GROUP];
+  const currentTime = getCurrentTime();
+
+  // Check if current time falls within any scheduled outage interval
+  for (const interval of groupData.intervals) {
+    if (isTimeInInterval(currentTime, interval)) {
+      console.log(`[EcoFlow] Power returned early! Scheduled until ${interval.end}, now ${currentTime}`);
+      if (TELEGRAM_BOT_TOKEN) {
+        notifyEarlyPowerReturn(ECOFLOW_GROUP, interval.end, currentTime);
+      }
+      return;
+    }
+  }
+
+  console.log('[EcoFlow] Power returned on schedule or outside outage window');
+}
 
 // Initialize Telegram bot
 initTelegramBot(TELEGRAM_BOT_TOKEN, getLatestSchedules);
@@ -195,7 +247,11 @@ app.get('/api/status', (req, res) => {
 
 // API: Get grid status from EcoFlow RIVER 3
 app.get('/api/grid-status', (req, res) => {
-  res.json(getGridStatus());
+  const limit = parseInt(req.query.limit) || 50;
+  res.json({
+    current: getGridStatus(),
+    history: getRecentGridStatusHistory(limit)
+  });
 });
 
 async function performFetch() {
@@ -405,7 +461,7 @@ app.listen(PORT, async () => {
   }
 
   // Initialize EcoFlow grid status monitoring (optional)
-  await initEcoFlow();
+  await initEcoFlow(getLatestSchedules, handleGridOnline);
 
   startPeriodicFetch();
 });

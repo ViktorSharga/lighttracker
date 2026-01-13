@@ -10,6 +10,7 @@
 
 const mqtt = require('mqtt');
 const protobuf = require('protobufjs');
+const { addGridStatusRecord } = require('./grid-storage');
 
 // State
 let mqttClient = null;
@@ -17,12 +18,15 @@ let gridStatus = 'unknown';
 let lastUpdate = null;
 let isConnected = false;
 let userId = null;
+let getLatestSchedulesFn = null; // Function to get current schedule for history recording
+let onGridOnlineCallback = null; // Callback for when grid comes back online
 
 // Environment variables
 const ECOFLOW_EMAIL = process.env.ECOFLOW_EMAIL;
 const ECOFLOW_PASSWORD = process.env.ECOFLOW_PASSWORD;
 const ECOFLOW_DEVICE_SN = process.env.ECOFLOW_DEVICE_SN;
 const ECOFLOW_API_HOST = process.env.ECOFLOW_API_HOST || 'api.ecoflow.com';
+const ECOFLOW_GROUP = process.env.ECOFLOW_GROUP;
 
 /**
  * Get current grid status
@@ -31,14 +35,21 @@ function getGridStatus() {
   return {
     status: gridStatus,
     lastUpdate: lastUpdate,
-    connected: isConnected
+    connected: isConnected,
+    ecoflowGroup: ECOFLOW_GROUP || null
   };
 }
 
 /**
  * Initialize EcoFlow integration
+ * @param {Function} getLatestSchedules - Function to get current schedule for history recording
+ * @param {Function} onGridOnline - Callback when grid power is restored
  */
-async function initEcoFlow() {
+async function initEcoFlow(getLatestSchedules, onGridOnline) {
+  // Store the schedule getter for use in updateGridStatus
+  getLatestSchedulesFn = getLatestSchedules || null;
+  onGridOnlineCallback = onGridOnline || null;
+
   if (!ECOFLOW_EMAIL || !ECOFLOW_PASSWORD || !ECOFLOW_DEVICE_SN) {
     console.log('[EcoFlow] Integration disabled (missing credentials)');
     return false;
@@ -319,11 +330,44 @@ function extractGridStatus(data, header) {
 
 /**
  * Update grid status and log if changed
+ * Records status changes to history with schedule reference
+ * Triggers callback when power comes back online
  */
 function updateGridStatus(newStatus, source) {
-  if (newStatus !== gridStatus) {
+  const previousStatus = gridStatus;
+
+  if (newStatus !== previousStatus) {
     console.log(`[EcoFlow] Grid status changed: ${newStatus} (${source})`);
+
+    // Get current schedule reference for history recording
+    let scheduleRef = null;
+    if (getLatestSchedulesFn) {
+      try {
+        const { current, dateKey } = getLatestSchedulesFn();
+        if (current && dateKey) {
+          scheduleRef = {
+            dateKey: dateKey,
+            fetchedAt: current.fetchedAt
+          };
+        }
+      } catch {
+        // Ignore errors getting schedule
+      }
+    }
+
+    // Record the status change to history
+    addGridStatusRecord(newStatus, scheduleRef);
+
     gridStatus = newStatus;
+
+    // Trigger callback when power comes back online (from offline state)
+    if (newStatus === 'online' && previousStatus === 'offline' && onGridOnlineCallback) {
+      try {
+        onGridOnlineCallback();
+      } catch (err) {
+        console.error('[EcoFlow] Error in onGridOnline callback:', err.message);
+      }
+    }
   }
   lastUpdate = new Date().toISOString();
 }

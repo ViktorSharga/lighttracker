@@ -255,6 +255,35 @@ export interface TimeOfDayAnalysis {
 }
 
 // ============================================
+// GRID STATUS DATA STRUCTURES
+// ============================================
+
+export type GridStatusValue = 'online' | 'offline' | 'unknown';
+
+export interface GridStatusCurrent {
+  status: GridStatusValue;
+  lastUpdate: string | null;
+  connected: boolean;
+  ecoflowGroup: string | null;
+}
+
+export interface GridStatusScheduleRef {
+  dateKey: string;
+  fetchedAt: string;
+}
+
+export interface GridStatusHistoryRecord {
+  timestamp: string;
+  status: GridStatusValue;
+  scheduleRef: GridStatusScheduleRef | null;
+}
+
+export interface GridStatusResponse {
+  current: GridStatusCurrent;
+  history: GridStatusHistoryRecord[];
+}
+
+// ============================================
 // STATUS DATA STRUCTURES
 // ============================================
 
