@@ -20,6 +20,7 @@ let isConnected = false;
 let userId = null;
 let getLatestSchedulesFn = null; // Function to get current schedule for history recording
 let onGridOnlineCallback = null; // Callback for when grid comes back online
+let onGridOfflineCallback = null; // Callback for when grid goes offline
 
 // Environment variables
 const ECOFLOW_EMAIL = process.env.ECOFLOW_EMAIL;
@@ -44,11 +45,13 @@ function getGridStatus() {
  * Initialize EcoFlow integration
  * @param {Function} getLatestSchedules - Function to get current schedule for history recording
  * @param {Function} onGridOnline - Callback when grid power is restored
+ * @param {Function} onGridOffline - Callback when grid power is lost
  */
-async function initEcoFlow(getLatestSchedules, onGridOnline) {
+async function initEcoFlow(getLatestSchedules, onGridOnline, onGridOffline) {
   // Store the schedule getter for use in updateGridStatus
   getLatestSchedulesFn = getLatestSchedules || null;
   onGridOnlineCallback = onGridOnline || null;
+  onGridOfflineCallback = onGridOffline || null;
 
   if (!ECOFLOW_EMAIL || !ECOFLOW_PASSWORD || !ECOFLOW_DEVICE_SN) {
     console.log('[EcoFlow] Integration disabled (missing credentials)');
@@ -349,7 +352,7 @@ function extractGridStatus(data, header) {
 /**
  * Update grid status and log if changed
  * Records status changes to history with schedule reference
- * Triggers callback when power comes back online
+ * Triggers callbacks on status transitions
  */
 function updateGridStatus(newStatus, source) {
   const previousStatus = gridStatus;
@@ -384,6 +387,15 @@ function updateGridStatus(newStatus, source) {
         onGridOnlineCallback();
       } catch (err) {
         console.error('[EcoFlow] Error in onGridOnline callback:', err.message);
+      }
+    }
+
+    // Trigger callback when power goes offline (from online state)
+    if (newStatus === 'offline' && previousStatus === 'online' && onGridOfflineCallback) {
+      try {
+        onGridOfflineCallback();
+      } catch (err) {
+        console.error('[EcoFlow] Error in onGridOffline callback:', err.message);
       }
     }
   }

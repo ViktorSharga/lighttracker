@@ -527,10 +527,96 @@ async function notifyEarlyPowerReturn(group, scheduledEnd, actualTime) {
   }
 }
 
+/**
+ * Notify subscribers when grid goes offline ahead of schedule (within 30 min window)
+ * @param {string} group - Group ID (e.g., "4.1")
+ * @param {string} scheduledStart - Scheduled outage start time (HH:MM)
+ * @param {string} actualTime - Actual offline time (HH:MM)
+ */
+async function notifyGridOfflineEarly(group, scheduledStart, actualTime) {
+  if (!bot) return;
+
+  const subscribers = loadSubscribers();
+  const chatIds = Object.keys(subscribers);
+
+  const targetChats = chatIds.filter(id => subscribers[id].group === group);
+  if (targetChats.length === 0) return;
+
+  // Calculate minutes early
+  const toMinutes = (t) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const minutesEarly = toMinutes(scheduledStart) - toMinutes(actualTime);
+  const earlyText = minutesEarly >= 60
+    ? `${Math.floor(minutesEarly / 60)} год ${minutesEarly % 60} хв`
+    : `${minutesEarly} хв`;
+
+  console.log(`[Telegram] Notifying ${targetChats.length} subscribers about early grid offline for group ${group}`);
+
+  const message =
+    `⚠️ *Світло вимкнули раніше*\n\n` +
+    `⚡ *Група ${group}*\n` +
+    `За графіком: ${scheduledStart}\n` +
+    `Вимкнули: ${actualTime}\n` +
+    `⏱ На ${earlyText} раніше`;
+
+  for (const chatId of targetChats) {
+    try {
+      await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    } catch (err) {
+      console.error(`Failed to notify chat ${chatId}:`, err.message);
+      if (err.response?.statusCode === 403 || err.response?.statusCode === 400) {
+        delete subscribers[chatId];
+        saveSubscribers(subscribers);
+        console.log(`Removed inactive subscriber: ${chatId}`);
+      }
+    }
+  }
+}
+
+/**
+ * Notify subscribers about emergency/unplanned grid offline (outside schedule)
+ * @param {string} group - Group ID (e.g., "4.1")
+ * @param {string} actualTime - Actual offline time (HH:MM)
+ */
+async function notifyEmergencyOffline(group, actualTime) {
+  if (!bot) return;
+
+  const subscribers = loadSubscribers();
+  const chatIds = Object.keys(subscribers);
+
+  const targetChats = chatIds.filter(id => subscribers[id].group === group);
+  if (targetChats.length === 0) return;
+
+  console.log(`[Telegram] Notifying ${targetChats.length} subscribers about emergency offline for group ${group}`);
+
+  const message =
+    `🚨 *Позапланове відключення!*\n\n` +
+    `⚡ *Група ${group}*\n` +
+    `Час: ${actualTime}\n` +
+    `⚠️ Відключення поза графіком`;
+
+  for (const chatId of targetChats) {
+    try {
+      await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    } catch (err) {
+      console.error(`Failed to notify chat ${chatId}:`, err.message);
+      if (err.response?.statusCode === 403 || err.response?.statusCode === 400) {
+        delete subscribers[chatId];
+        saveSubscribers(subscribers);
+        console.log(`Removed inactive subscriber: ${chatId}`);
+      }
+    }
+  }
+}
+
 module.exports = {
   initTelegramBot,
   notifySubscribers,
   notifyEarlyPowerReturn,
+  notifyGridOfflineEarly,
+  notifyEmergencyOffline,
   getSubscriberCount,
   getSubscribersByGroup
 };

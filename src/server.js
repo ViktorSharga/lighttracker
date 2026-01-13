@@ -6,7 +6,7 @@ const { fetchSchedulePage } = require('./fetcher');
 const { parseAllSchedules } = require('./parser');
 const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate, getAllSchedules, importSchedule, deleteSchedule } = require('./storage');
 const { compareSchedules, buildDaySummary, calculateStatistics } = require('./comparator');
-const { initTelegramBot, notifySubscribers, notifyEarlyPowerReturn, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
+const { initTelegramBot, notifySubscribers, notifyEarlyPowerReturn, notifyGridOfflineEarly, notifyEmergencyOffline, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
 const { initEcoFlow, getGridStatus } = require('./ecoflow');
 const { getRecentGridStatusHistory, getFullGridStatusHistory } = require('./grid-storage');
 
@@ -81,6 +81,58 @@ function handleGridOnline() {
   }
 
   console.log('[EcoFlow] Power returned on schedule or outside outage window');
+}
+
+// Callback for when grid goes offline
+function handleGridOffline() {
+  if (!ECOFLOW_GROUP) {
+    console.log('[EcoFlow] No ECOFLOW_GROUP configured, skipping offline check');
+    return;
+  }
+
+  const { current: schedule } = getLatestSchedules();
+  if (!schedule || !schedule.groups[ECOFLOW_GROUP]) {
+    console.log(`[EcoFlow] No schedule data for group ${ECOFLOW_GROUP}`);
+    return;
+  }
+
+  const groupData = schedule.groups[ECOFLOW_GROUP];
+  const currentTime = getCurrentTime();
+
+  const toMinutes = (t) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const nowMinutes = toMinutes(currentTime);
+
+  // Check if we're within a scheduled outage (normal, don't notify)
+  for (const interval of groupData.intervals) {
+    if (isTimeInInterval(currentTime, interval)) {
+      console.log(`[EcoFlow] Grid offline during scheduled outage (${interval.start}-${interval.end}), no notification`);
+      return;
+    }
+  }
+
+  // Check if we're within 30 minutes BEFORE any scheduled outage (early offline)
+  const EARLY_WINDOW_MINUTES = 30;
+  for (const interval of groupData.intervals) {
+    const startMinutes = toMinutes(interval.start);
+    const minutesBefore = startMinutes - nowMinutes;
+
+    if (minutesBefore > 0 && minutesBefore <= EARLY_WINDOW_MINUTES) {
+      console.log(`[EcoFlow] Grid offline ${minutesBefore} min before scheduled outage at ${interval.start}`);
+      if (TELEGRAM_BOT_TOKEN) {
+        notifyGridOfflineEarly(ECOFLOW_GROUP, interval.start, currentTime);
+      }
+      return;
+    }
+  }
+
+  // Outside schedule entirely - emergency notification
+  console.log(`[EcoFlow] EMERGENCY: Grid offline outside schedule at ${currentTime}`);
+  if (TELEGRAM_BOT_TOKEN) {
+    notifyEmergencyOffline(ECOFLOW_GROUP, currentTime);
+  }
 }
 
 // Initialize Telegram bot
@@ -582,7 +634,7 @@ app.listen(PORT, async () => {
   }
 
   // Initialize EcoFlow grid status monitoring (optional)
-  await initEcoFlow(getLatestSchedules, handleGridOnline);
+  await initEcoFlow(getLatestSchedules, handleGridOnline, handleGridOffline);
 
   startPeriodicFetch();
 });
