@@ -1,13 +1,14 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const archiver = require('archiver');
 const { fetchSchedulePage } = require('./fetcher');
 const { parseAllSchedules } = require('./parser');
 const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate, getAllSchedules, importSchedule, deleteSchedule } = require('./storage');
 const { compareSchedules, buildDaySummary, calculateStatistics } = require('./comparator');
 const { initTelegramBot, notifySubscribers, notifyEarlyPowerReturn, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
 const { initEcoFlow, getGridStatus } = require('./ecoflow');
-const { getRecentGridStatusHistory } = require('./grid-storage');
+const { getRecentGridStatusHistory, getFullGridStatusHistory } = require('./grid-storage');
 
 // All possible groups
 const ALL_GROUPS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2'];
@@ -252,6 +253,120 @@ app.get('/api/grid-status', (req, res) => {
     current: getGridStatus(),
     history: getRecentGridStatusHistory(limit)
   });
+});
+
+// API: Export full grid status history
+app.get('/api/grid-status/export', (req, res) => {
+  const history = getFullGridStatusHistory();
+  res.json({
+    exportedAt: new Date().toISOString(),
+    recordCount: history.length,
+    history
+  });
+});
+
+// API: System info and diagnostics
+app.get('/api/system', (req, res) => {
+  const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+
+  // Calculate data file sizes
+  const getFileSize = (filename) => {
+    const filePath = path.join(dataDir, filename);
+    try {
+      return fs.existsSync(filePath) ? fs.statSync(filePath).size : 0;
+    } catch { return 0; }
+  };
+
+  // Get schedule stats
+  const schedules = getAllSchedules();
+  const dateKeys = Object.keys(schedules);
+  const totalRecords = dateKeys.reduce((sum, key) => sum + schedules[key].length, 0);
+
+  // Get grid status stats
+  const gridHistory = getFullGridStatusHistory();
+
+  res.json({
+    version: VERSION,
+    uptime: process.uptime(),
+    nodeVersion: process.version,
+    memoryUsage: process.memoryUsage(),
+    dataStats: {
+      scheduleDays: dateKeys.length,
+      scheduleRecords: totalRecords,
+      dateRange: dateKeys.length > 0 ? {
+        oldest: dateKeys.sort()[0],
+        newest: dateKeys.sort().reverse()[0]
+      } : null,
+      gridStatusRecords: gridHistory.length,
+      telegramSubscribers: getSubscriberCount()
+    },
+    dataFiles: {
+      'schedules.json': getFileSize('schedules.json'),
+      'subscribers.json': getFileSize('subscribers.json'),
+      'grid-status.json': getFileSize('grid-status.json')
+    },
+    config: {
+      fetchIntervalMs: FETCH_INTERVAL_MS,
+      telegramEnabled: !!TELEGRAM_BOT_TOKEN,
+      ecoflowEnabled: !!(process.env.ECOFLOW_EMAIL && process.env.ECOFLOW_DEVICE_SN),
+      ecoflowGroup: process.env.ECOFLOW_GROUP || null
+    }
+  });
+});
+
+// API: Download backup archive
+app.get('/api/backup', (req, res) => {
+  const timestamp = new Date().toISOString().slice(0, 10);
+  const filename = `lighttracker-backup-${timestamp}.zip`;
+
+  try {
+    res.set('Content-Type', 'application/zip');
+    res.set('Content-Disposition', `attachment; filename="${filename}"`);
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.on('error', (err) => {
+      console.error('[Backup] Archive error:', err.message);
+      if (!res.headersSent) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+    archive.pipe(res);
+
+    const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+
+    // Add data files if they exist
+    ['schedules.json', 'subscribers.json', 'grid-status.json'].forEach(file => {
+      const filePath = path.join(dataDir, file);
+      if (fs.existsSync(filePath)) {
+        archive.file(filePath, { name: file });
+      }
+    });
+
+    // Add manifest
+    const schedules = getAllSchedules();
+    const dateKeys = Object.keys(schedules);
+    const manifest = {
+      exportedAt: new Date().toISOString(),
+      version: VERSION,
+      files: ['schedules.json', 'subscribers.json', 'grid-status.json'],
+      stats: {
+        scheduleDays: dateKeys.length,
+        dateRange: dateKeys.length > 0 ? {
+          from: dateKeys.sort()[0],
+          to: dateKeys.sort().reverse()[0]
+        } : null
+      }
+    };
+    archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
+
+    archive.finalize();
+    console.log(`[Backup] Archive created: ${filename}`);
+  } catch (err) {
+    console.error('[Backup] Error:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 });
 
 async function performFetch() {

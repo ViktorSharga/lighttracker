@@ -294,6 +294,9 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | GET | `/api/export` | Export all schedules (for data transfer between instances) |
 | GET | `/api/status` | App status, version, Telegram subscriber counts |
 | GET | `/api/grid-status?limit=N` | Real-time grid status + history from EcoFlow RIVER 3 (if configured) |
+| GET | `/api/grid-status/export` | Export full grid status history as JSON |
+| GET | `/api/system` | System diagnostics: version, uptime, memory, data stats, config |
+| GET | `/api/backup` | Download ZIP archive of all data (schedules, subscribers, grid-status, manifest) |
 | GET | `/health` | Health check endpoint (returns 200 OK when ready) |
 | POST | `/api/fetch` | Trigger immediate fetch (returns 409 if already fetching) |
 | POST | `/api/schedule/import` | Import single schedule record |
