@@ -41,10 +41,16 @@ function isTimeInInterval(timeStr, interval) {
   return now >= start && now < end;
 }
 
-// Helper: Get current time as HH:MM
+// Helper: Get current time as HH:MM in Ukraine timezone
 function getCurrentTime() {
   const now = new Date();
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const kyivTime = now.toLocaleString('en-GB', {
+    timeZone: 'Europe/Kyiv',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  return kyivTime;
 }
 
 // Callback for when grid comes back online
