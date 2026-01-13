@@ -315,12 +315,21 @@ function processHeader(header) {
 function extractGridStatus(data, header) {
   const allFields = flattenNumericFields(data);
 
-  // HeartbeatPack (cmdFunc=1, cmdId=1) contains powerSource field
-  // f1.f1: 1 = battery/standby (offline), 2 = AC charging (online)
+  // HeartbeatPack (cmdFunc=1, cmdId=1) contains power source fields
   if (header.cmdFunc === 1 && header.cmdId === 1) {
+    // Primary: f2.f4 - continuous AC state indicator (0=offline, 2=online)
+    // Present in every heartbeat, gives immediate state on connect
+    const acState = allFields['f2.f4'];
+    if (typeof acState === 'number') {
+      updateGridStatus(acState === 2 ? 'online' : 'offline', `acState(f2.f4)=${acState}`);
+      return;
+    }
+
+    // Fallback: f1.f1 - power source (1=battery/offline, 2=AC/online)
+    // Only reports on transitions, not continuous state
     const powerSource = allFields['f1.f1'];
-    if (typeof powerSource === 'number') {
-      updateGridStatus(powerSource === 2 ? 'online' : 'offline', `powerSource=${powerSource}`);
+    if (typeof powerSource === 'number' && powerSource !== 0) {
+      updateGridStatus(powerSource === 2 ? 'online' : 'offline', `powerSource(f1.f1)=${powerSource}`);
       return;
     }
   }

@@ -202,10 +202,10 @@ The EcoFlow module connects to EcoFlow's MQTT broker to receive real-time device
 3. XOR decrypted using auto-detected key (typically first byte XOR'd to produce valid protobuf start `0x0a`)
 4. Inner `pdata` decoded recursively to extract nested fields
 
-**Grid Status Field:** For `cmdFunc=1, cmdId=1` (HeartbeatPack) messages:
-- Field `f1.f1` indicates power source: `1` = battery/standby (grid offline), `2` = AC charging (grid online)
-- Other fields in heartbeat: `f1.f9` (battery %), `f2.f1-f2.f3` (AC input values, 0 when offline)
-- This differs from the official `plugInInfoAcInFlag` (field 61) which appears in `DisplayPropertyUpload` messages
+**Grid Status Fields:** For `cmdFunc=1, cmdId=1` (HeartbeatPack) messages:
+- **Primary:** `f2.f4` - continuous AC state indicator: `0` = offline, `2` = online (present in every heartbeat)
+- **Fallback:** `f1.f1` - power source: `1` = battery/offline, `2` = AC/online (only reports transitions)
+- Other fields: `f1.f9` (battery %), `f1.f4`/`f1.f5` (AC voltage/power when connected)
 
 **Topic:** `/app/device/property/{deviceSN}` receives periodic status updates (~every 30s)
 
@@ -215,19 +215,12 @@ The EcoFlow module connects to EcoFlow's MQTT broker to receive real-time device
 - Reference to active schedule (dateKey + fetchedAt) for correlation with outage schedules
 
 **Early Power Return Notifications:** When `ECOFLOW_GROUP` is configured and power returns while within a scheduled outage interval, subscribers of that group receive a Telegram notification showing:
-- Scheduled end time
+- Scheduled end time (Ukraine timezone)
 - Actual return time
 - Minutes early (e.g., "На 45 хв раніше")
 
-**Known Limitations:**
-- The `f1.f1` field only reports power source **changes**, not continuous current state
-- After server restart, status shows "unknown" until next grid state transition
-- UI live status badge may be stale until a power on/off event occurs
-
 **TODO - Future Improvements:**
 - [ ] Apply for EcoFlow Developer API access for official REST endpoints
-- [ ] Use official API to query current device state on startup
-- [ ] Consider polling `f2.f1-f2.f3` (AC input values) as alternative continuous indicator
 
 ### Parser Regex Patterns
 
