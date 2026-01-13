@@ -191,6 +191,22 @@ Design and test UI for these primary devices:
 | `src/telegram.js` | Bot integration, per-group notifications |
 | `src/ecoflow.js` | EcoFlow RIVER 3 MQTT integration for grid status (optional) |
 
+### EcoFlow Integration Details
+
+The EcoFlow module connects to EcoFlow's MQTT broker to receive real-time device status. Key implementation details:
+
+**Protocol:** The RIVER 3 uses protobuf messages with XOR encryption. Messages are:
+1. Base64 decoded (if applicable)
+2. Parsed as `HeaderMessage` protobuf containing: `pdata`, `encType`, `seq`, `cmdFunc`, `cmdId`
+3. XOR decrypted using auto-detected key (typically first byte XOR'd to produce valid protobuf start `0x0a`)
+4. Inner `pdata` decoded recursively to extract nested fields
+
+**Grid Status Field:** For `cmdFunc=1, cmdId=1` (HeartbeatPack) messages:
+- Field `f1.f1` indicates power source: `1` = battery/standby (grid offline), `2` = AC charging (grid online)
+- This differs from the official `plugInInfoAcInFlag` (field 61) which appears in `DisplayPropertyUpload` messages
+
+**Topic:** `/app/device/property/{deviceSN}` receives periodic status updates (~every 30s)
+
 ### Parser Regex Patterns
 
 The parser extracts data from Ukrainian text. Key patterns:

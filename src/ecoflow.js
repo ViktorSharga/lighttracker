@@ -1,8 +1,11 @@
 /**
  * EcoFlow RIVER 3 Grid Status Integration
  *
- * Minimal integration to detect grid power status (online/offline).
- * Only extracts plugInInfoAcInFlag field, ignores all other device data.
+ * Connects to EcoFlow MQTT broker to detect real-time grid power status.
+ * Uses protobuf messages with XOR encryption from the device.
+ *
+ * Grid status is determined from HeartbeatPack messages (cmdFunc=1, cmdId=1):
+ * - f1.f1 (powerSource): 1 = battery/standby (offline), 2 = AC charging (online)
  */
 
 const mqtt = require('mqtt');
@@ -22,14 +25,6 @@ const ECOFLOW_DEVICE_SN = process.env.ECOFLOW_DEVICE_SN;
 const ECOFLOW_API_HOST = process.env.ECOFLOW_API_HOST || 'api.ecoflow.com';
 
 /**
- * Mask serial number for logging (security)
- */
-function maskSN(sn) {
-  if (!sn || sn.length < 6) return '***';
-  return sn.substring(0, 2) + '***' + sn.substring(sn.length - 3);
-}
-
-/**
  * Get current grid status
  */
 function getGridStatus() {
@@ -41,6 +36,42 @@ function getGridStatus() {
 }
 
 /**
+ * Initialize EcoFlow integration
+ */
+async function initEcoFlow() {
+  if (!ECOFLOW_EMAIL || !ECOFLOW_PASSWORD || !ECOFLOW_DEVICE_SN) {
+    console.log('[EcoFlow] Integration disabled (missing credentials)');
+    return false;
+  }
+
+  console.log(`[EcoFlow] Initializing for device ${maskSN(ECOFLOW_DEVICE_SN)}...`);
+
+  try {
+    const credentials = await getEcoFlowCredentials();
+    await connectMQTT(credentials);
+    return true;
+  } catch (err) {
+    console.error('[EcoFlow] Initialization failed:', err.message);
+    return false;
+  }
+}
+
+/**
+ * Cleanup on shutdown
+ */
+function closeEcoFlow() {
+  if (mqttClient) {
+    console.log('[EcoFlow] Closing connection...');
+    mqttClient.end();
+    mqttClient = null;
+  }
+}
+
+// ============================================================================
+// Authentication
+// ============================================================================
+
+/**
  * Authenticate with EcoFlow API and get MQTT credentials
  */
 async function getEcoFlowCredentials() {
@@ -50,24 +81,22 @@ async function getEcoFlowCredentials() {
   console.log(`[EcoFlow] Authenticating via ${ECOFLOW_API_HOST}...`);
 
   // Step 1: Login to get bearer token
-  const loginBody = {
-    os: 'linux',
-    scene: 'IOT_APP',
-    appVersion: '1.0.0',
-    osVersion: 'NodeJS',
-    password: Buffer.from(ECOFLOW_PASSWORD).toString('base64'),
-    oauth: { bundleId: 'com.ef.EcoFlow' },
-    email: ECOFLOW_EMAIL,
-    userType: 'ECOFLOW'
-  };
-
   const loginResponse = await fetch(loginUrl, {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(loginBody)
+    body: JSON.stringify({
+      os: 'linux',
+      scene: 'IOT_APP',
+      appVersion: '1.0.0',
+      osVersion: 'NodeJS',
+      password: Buffer.from(ECOFLOW_PASSWORD).toString('base64'),
+      oauth: { bundleId: 'com.ef.EcoFlow' },
+      email: ECOFLOW_EMAIL,
+      userType: 'ECOFLOW'
+    })
   });
 
   if (!loginResponse.ok) {
@@ -121,163 +150,15 @@ async function getEcoFlowCredentials() {
   };
 }
 
-/**
- * Handle incoming MQTT message - ONLY extract grid status
- */
-function handleMessage(topic, payload) {
-  try {
-    // Try JSON first
-    const raw = payload.toString();
-    if (raw.startsWith('{')) {
-      const data = JSON.parse(raw);
-      processData(data);
-      return;
-    }
-
-    // Decode protobuf message
-    const reader = protobuf.Reader.create(payload);
-    const decoded = decodeProtobuf(reader, payload.length);
-    processData(decoded);
-  } catch (err) {
-    // Silently ignore decode errors (common with binary messages)
-  }
-}
-
-/**
- * Manually decode protobuf wire format
- */
-function decodeProtobuf(reader, len) {
-  const result = {};
-  const end = reader.pos + len;
-
-  while (reader.pos < end) {
-    const tag = reader.uint32();
-    const fieldNum = tag >>> 3;
-    const wireType = tag & 7;
-
-    switch (wireType) {
-      case 0: // Varint
-        result[`f${fieldNum}`] = reader.uint64().toNumber();
-        break;
-      case 1: // 64-bit
-        result[`f${fieldNum}`] = reader.double();
-        break;
-      case 2: // Length-delimited (string, bytes, or embedded message)
-        const bytes = reader.bytes();
-        // Try to decode as nested message
-        try {
-          const nested = decodeProtobuf(protobuf.Reader.create(bytes), bytes.length);
-          result[`f${fieldNum}`] = nested;
-        } catch {
-          // Try as string
-          const str = bytes.toString('utf8');
-          if (str.match(/^[\x20-\x7E]*$/)) {
-            result[`f${fieldNum}`] = str;
-          } else {
-            result[`f${fieldNum}`] = bytes.toString('hex');
-          }
-        }
-        break;
-      case 5: // 32-bit
-        result[`f${fieldNum}`] = reader.float();
-        break;
-      default:
-        reader.skipType(wireType);
-    }
-  }
-
-  return result;
-}
-
-/**
- * Process decoded data and extract grid status
- */
-function processData(data) {
-  if (!data) return;
-
-  // Search for AC-related fields in decoded protobuf
-  // f1.f11 and f1.f4 are indicators in RIVER 3 messages
-  const allFields = collectAllFields(data);
-
-  const f11 = allFields['f1.f11'];
-  const f4 = allFields['f1.f4'];
-  const f61 = findField(data, ['f61', 'f202', 'f47']);
-
-  // Use first available indicator
-  const acIndicator = f61 ?? f11 ?? f4;
-
-  if (acIndicator !== undefined) {
-    const newStatus = acIndicator === 1 || acIndicator > 0 ? 'online' : 'offline';
-
-    if (newStatus !== gridStatus) {
-      console.log(`[EcoFlow] Grid status changed: ${newStatus}`);
-      gridStatus = newStatus;
-    }
-
-    lastUpdate = new Date().toISOString();
-  }
-}
-
-/**
- * Recursively search for a field in nested object
- */
-function findField(obj, fieldNames, depth = 0) {
-  if (!obj || typeof obj !== 'object' || depth > 5) return undefined;
-
-  for (const name of fieldNames) {
-    if (obj[name] !== undefined) {
-      return obj[name];
-    }
-  }
-
-  // Search in nested objects/arrays
-  for (const key of Object.keys(obj)) {
-    const val = obj[key];
-    if (typeof val === 'object') {
-      const found = findField(val, fieldNames, depth + 1);
-      if (found !== undefined) return found;
-    }
-  }
-
-  return undefined;
-}
-
-/**
- * Collect all fields from nested object with flattened paths
- */
-function collectAllFields(obj, prefix = '', result = {}, depth = 0) {
-  if (!obj || typeof obj !== 'object' || depth > 5) return result;
-
-  for (const [key, val] of Object.entries(obj)) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    if (typeof val === 'object' && val !== null) {
-      collectAllFields(val, path, result, depth + 1);
-    } else {
-      result[path] = val;
-    }
-  }
-
-  return result;
-}
-
-/**
- * Generate UUID for MQTT client ID
- */
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
+// ============================================================================
+// MQTT Connection
+// ============================================================================
 
 /**
  * Connect to EcoFlow MQTT broker
  */
 async function connectMQTT(credentials) {
   const brokerUrl = `${credentials.protocol}://${credentials.url}:${credentials.port}`;
-
-  // EcoFlow requires clientId in format: ANDROID_{uuid}_{userId}
   const clientId = `ANDROID_${generateUUID()}_${userId}`;
 
   console.log('[EcoFlow] Connecting to MQTT broker...');
@@ -292,34 +173,16 @@ async function connectMQTT(credentials) {
   });
 
   mqttClient.on('connect', () => {
-    console.log(`[EcoFlow] Connected to MQTT broker`);
+    console.log('[EcoFlow] Connected to MQTT broker');
     isConnected = true;
 
-    // Subscribe to device status topic
     const topic = `/app/device/property/${ECOFLOW_DEVICE_SN}`;
     mqttClient.subscribe(topic, (err) => {
       if (err) {
-        console.error('[EcoFlow] Failed to subscribe to topic');
+        console.error('[EcoFlow] Failed to subscribe to device topic');
       } else {
         console.log(`[EcoFlow] Subscribed to device ${maskSN(ECOFLOW_DEVICE_SN)}`);
-
-        // Send a get command to request current status
-        const getTopic = `/app/${userId}/${ECOFLOW_DEVICE_SN}/thing/property/get`;
-        const getPayload = JSON.stringify({
-          from: 'ios',
-          operateType: 'latestQuotas',
-          id: Date.now().toString(),
-          lang: 'en-us',
-          params: {},
-          version: '1.0'
-        });
-        mqttClient.publish(getTopic, getPayload, (pubErr) => {
-          if (pubErr) {
-            console.error('[EcoFlow] Failed to request device status');
-          } else {
-            console.log('[EcoFlow] Requested device status');
-          }
-        });
+        requestDeviceStatus();
       }
     });
   });
@@ -343,36 +206,299 @@ async function connectMQTT(credentials) {
 }
 
 /**
- * Initialize EcoFlow integration
+ * Request current device status
  */
-async function initEcoFlow() {
-  // Check for required credentials
-  if (!ECOFLOW_EMAIL || !ECOFLOW_PASSWORD || !ECOFLOW_DEVICE_SN) {
-    console.log('[EcoFlow] Integration disabled (missing credentials)');
-    return false;
-  }
+function requestDeviceStatus() {
+  const topic = `/app/${userId}/${ECOFLOW_DEVICE_SN}/thing/property/get`;
+  const payload = JSON.stringify({
+    from: 'ios',
+    operateType: 'latestQuotas',
+    id: Date.now().toString(),
+    lang: 'en-us',
+    params: {},
+    version: '1.0'
+  });
 
-  console.log(`[EcoFlow] Initializing for device ${maskSN(ECOFLOW_DEVICE_SN)}...`);
+  mqttClient.publish(topic, payload, (err) => {
+    if (err) {
+      console.error('[EcoFlow] Failed to request device status');
+    } else {
+      console.log('[EcoFlow] Requested device status');
+    }
+  });
+}
 
+// ============================================================================
+// Message Processing
+// ============================================================================
+
+/**
+ * Handle incoming MQTT message
+ */
+function handleMessage(topic, payload) {
   try {
-    const credentials = await getEcoFlowCredentials();
-    await connectMQTT(credentials);
-    return true;
-  } catch (err) {
-    console.error('[EcoFlow] Initialization failed:', err.message);
-    return false;
+    // Try JSON first (older protocol)
+    const raw = payload.toString();
+    if (raw.startsWith('{')) {
+      const data = JSON.parse(raw);
+      if (data.params?.plugInInfoAcInFlag !== undefined) {
+        updateGridStatus(data.params.plugInInfoAcInFlag === 1 ? 'online' : 'offline', 'json');
+      }
+      return;
+    }
+
+    // Try base64 decode (some payloads are base64 encoded)
+    let binaryPayload = payload;
+    const payloadStr = payload.toString();
+    if (/^[A-Za-z0-9+/=]+$/.test(payloadStr) && payloadStr.length > 20) {
+      try {
+        binaryPayload = Buffer.from(payloadStr, 'base64');
+      } catch {
+        // Not base64, use raw
+      }
+    }
+
+    // Decode as protobuf HeaderMessage
+    const reader = protobuf.Reader.create(binaryPayload);
+    const headerMsg = decodeHeaderMessage(reader, binaryPayload.length);
+
+    for (const header of headerMsg.headers) {
+      processHeader(header);
+    }
+  } catch {
+    // Ignore parsing errors for unknown message formats
   }
 }
 
 /**
- * Cleanup on shutdown
+ * Process a header entry - XOR decrypt and decode inner payload
  */
-function closeEcoFlow() {
-  if (mqttClient) {
-    console.log('[EcoFlow] Closing connection...');
-    mqttClient.end();
-    mqttClient = null;
+function processHeader(header) {
+  if (!header.pdata || header.pdata.length === 0) return;
+
+  // XOR decrypt the payload
+  const pdata = xorDecrypt(header.pdata);
+
+  // Decode inner protobuf and extract grid status
+  try {
+    const reader = protobuf.Reader.create(pdata);
+    const data = decodeProtobufFlat(reader, pdata.length);
+    extractGridStatus(data, header);
+  } catch {
+    // Ignore decode errors
   }
+}
+
+/**
+ * Extract grid status from decoded protobuf data
+ */
+function extractGridStatus(data, header) {
+  const allFields = flattenNumericFields(data);
+
+  // HeartbeatPack (cmdFunc=1, cmdId=1) contains powerSource field
+  // f1.f1: 1 = battery/standby (offline), 2 = AC charging (online)
+  if (header.cmdFunc === 1 && header.cmdId === 1) {
+    const powerSource = allFields['f1.f1'];
+    if (typeof powerSource === 'number') {
+      updateGridStatus(powerSource === 2 ? 'online' : 'offline', `powerSource=${powerSource}`);
+      return;
+    }
+  }
+
+  // Fallback: check for official plugInInfoAcInFlag (field 61) if present
+  // This field appears in DisplayPropertyUpload messages on some device models
+  const f61Key = Object.keys(allFields).find(k => k === 'f61' || k.endsWith('.f61'));
+  if (f61Key && typeof allFields[f61Key] === 'number') {
+    updateGridStatus(allFields[f61Key] === 1 ? 'online' : 'offline', `${f61Key}=${allFields[f61Key]}`);
+    return;
+  }
+
+  // Update timestamp even without status change
+  lastUpdate = new Date().toISOString();
+}
+
+/**
+ * Update grid status and log if changed
+ */
+function updateGridStatus(newStatus, source) {
+  if (newStatus !== gridStatus) {
+    console.log(`[EcoFlow] Grid status changed: ${newStatus} (${source})`);
+    gridStatus = newStatus;
+  }
+  lastUpdate = new Date().toISOString();
+}
+
+// ============================================================================
+// Protobuf Decoding
+// ============================================================================
+
+/**
+ * XOR decrypt payload - auto-detect key based on expected protobuf structure
+ */
+function xorDecrypt(pdata) {
+  const firstByte = pdata[0];
+
+  // Valid protobuf starts with 0x0a (field 1, length-delimited) or 0x08 (field 1, varint)
+  // Find XOR key that produces valid protobuf start
+  const possibleKeys = [
+    firstByte ^ 0x0a,
+    firstByte ^ 0x08,
+    0x00
+  ];
+
+  for (const key of possibleKeys) {
+    if ((pdata[0] ^ key) === 0x0a || (pdata[0] ^ key) === 0x08) {
+      if (key === 0) return pdata;
+
+      const decrypted = Buffer.alloc(pdata.length);
+      for (let i = 0; i < pdata.length; i++) {
+        decrypted[i] = pdata[i] ^ key;
+      }
+      return decrypted;
+    }
+  }
+
+  return pdata;
+}
+
+/**
+ * Decode EcoFlow HeaderMessage structure
+ */
+function decodeHeaderMessage(reader, len) {
+  const result = { headers: [] };
+  const end = reader.pos + len;
+
+  while (reader.pos < end) {
+    const tag = reader.uint32();
+    const fieldNum = tag >>> 3;
+    const wireType = tag & 7;
+
+    if (fieldNum === 1 && wireType === 2) {
+      const headerBytes = reader.bytes();
+      const headerReader = protobuf.Reader.create(headerBytes);
+      result.headers.push(decodeHeader(headerReader, headerBytes.length));
+    } else {
+      reader.skipType(wireType);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Decode individual header entry
+ */
+function decodeHeader(reader, len) {
+  const header = {};
+  const end = reader.pos + len;
+
+  while (reader.pos < end) {
+    const tag = reader.uint32();
+    const fieldNum = tag >>> 3;
+    const wireType = tag & 7;
+
+    switch (fieldNum) {
+      case 1: header.pdata = reader.bytes(); break;
+      case 2: header.src = reader.uint32(); break;
+      case 3: header.dest = reader.uint32(); break;
+      case 4: header.cmdFunc = reader.uint32(); break;
+      case 5: header.cmdId = reader.uint32(); break;
+      case 7: header.encType = reader.uint32(); break;
+      case 8: header.seq = reader.uint32(); break;
+      default: reader.skipType(wireType);
+    }
+  }
+
+  return header;
+}
+
+/**
+ * Decode protobuf recursively to flat field map
+ */
+function decodeProtobufFlat(reader, len, depth = 0) {
+  const result = {};
+  const end = reader.pos + len;
+
+  while (reader.pos < end) {
+    try {
+      const tag = reader.uint32();
+      const fieldNum = tag >>> 3;
+      const wireType = tag & 7;
+
+      if (fieldNum > 10000) break; // Sanity check
+
+      switch (wireType) {
+        case 0: // Varint
+          result[`f${fieldNum}`] = reader.uint64().toNumber();
+          break;
+        case 1: // 64-bit fixed
+          result[`f${fieldNum}`] = reader.double();
+          break;
+        case 2: // Length-delimited
+          const bytes = reader.bytes();
+          if (depth < 5 && bytes.length > 2) {
+            try {
+              const nestedReader = protobuf.Reader.create(bytes);
+              const nested = decodeProtobufFlat(nestedReader, bytes.length, depth + 1);
+              result[`f${fieldNum}`] = Object.keys(nested).length > 0 ? nested : bytes.toString('hex');
+            } catch {
+              result[`f${fieldNum}`] = bytes.toString('hex');
+            }
+          } else {
+            result[`f${fieldNum}`] = bytes.toString('hex');
+          }
+          break;
+        case 5: // 32-bit fixed
+          result[`f${fieldNum}`] = reader.float();
+          break;
+        default:
+          reader.skipType(wireType);
+      }
+    } catch {
+      break;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Flatten nested object to find all numeric values at any depth
+ */
+function flattenNumericFields(obj, prefix = '') {
+  const result = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (typeof value === 'number') {
+      result[fullKey] = value;
+    } else if (typeof value === 'object' && value !== null) {
+      Object.assign(result, flattenNumericFields(value, fullKey));
+    }
+  }
+  return result;
+}
+
+// ============================================================================
+// Utilities
+// ============================================================================
+
+/**
+ * Mask serial number for logging (security)
+ */
+function maskSN(sn) {
+  if (!sn || sn.length < 6) return '***';
+  return sn.substring(0, 2) + '***' + sn.substring(sn.length - 3);
+}
+
+/**
+ * Generate UUID for MQTT client ID
+ */
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
 module.exports = {
