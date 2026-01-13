@@ -147,17 +147,31 @@ function handleMessage(topic, payload) {
 }
 
 /**
+ * Generate UUID for MQTT client ID
+ */
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+/**
  * Connect to EcoFlow MQTT broker
  */
 async function connectMQTT(credentials) {
   const brokerUrl = `${credentials.protocol}://${credentials.url}:${credentials.port}`;
+
+  // EcoFlow requires clientId in format: ANDROID_{uuid}_{userId}
+  const clientId = `ANDROID_${generateUUID()}_${userId}`;
 
   console.log('[EcoFlow] Connecting to MQTT broker...');
 
   mqttClient = mqtt.connect(brokerUrl, {
     username: credentials.username,
     password: credentials.password,
-    clientId: `lighttracker_${Date.now()}`,
+    clientId: clientId,
     connectTimeout: 30000,
     reconnectPeriod: 5000,
     clean: true
