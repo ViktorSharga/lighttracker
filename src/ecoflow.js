@@ -248,12 +248,21 @@ function requestDeviceStatus() {
  */
 function handleMessage(topic, payload) {
   try {
-    // Try JSON first (older protocol)
+    // Try JSON first (older protocol or latestQuotas response)
     const raw = payload.toString();
     if (raw.startsWith('{')) {
       const data = JSON.parse(raw);
-      if (data.params?.plugInInfoAcInFlag !== undefined) {
-        updateGridStatus(data.params.plugInInfoAcInFlag === 1 ? 'online' : 'offline', 'json');
+
+      // Check for latestQuotas response with AC power info
+      if (data.params) {
+        // Check various AC input indicators
+        if (data.params.plugInInfoAcInFlag !== undefined) {
+          updateGridStatus(data.params.plugInInfoAcInFlag === 1 ? 'online' : 'offline', 'json.plugInInfoAcInFlag');
+        } else if (data.params.acInputPower !== undefined) {
+          updateGridStatus(data.params.acInputPower > 0 ? 'online' : 'offline', `json.acInputPower=${data.params.acInputPower}`);
+        } else if (data.params.acInputFrequency !== undefined) {
+          updateGridStatus(data.params.acInputFrequency > 0 ? 'online' : 'offline', `json.acInputFrequency=${data.params.acInputFrequency}`);
+        }
       }
       return;
     }
