@@ -390,8 +390,9 @@ function updateGridStatus(newStatus, source) {
       }
     }
 
-    // Trigger callback when power goes offline (from online state)
-    if (newStatus === 'offline' && previousStatus === 'online' && onGridOfflineCallback) {
+    // Trigger callback when power goes offline (from online or unknown state)
+    // Skip if previousStatus was already offline (duplicate detection)
+    if (newStatus === 'offline' && previousStatus !== 'offline' && onGridOfflineCallback) {
       try {
         onGridOfflineCallback();
       } catch (err) {
