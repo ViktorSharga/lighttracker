@@ -8,7 +8,7 @@ const { addSchedule, getLatestSchedules, getAllDates, getSchedulesForDate, getAl
 const { compareSchedules, buildDaySummary, calculateStatistics } = require('./comparator');
 const { initTelegramBot, notifySubscribers, notifyEarlyPowerReturn, notifyGridOfflineEarly, notifyEmergencyOffline, getSubscriberCount, getSubscribersByGroup } = require('./telegram');
 const { initEcoFlow, getGridStatus } = require('./ecoflow');
-const { getRecentGridStatusHistory, getFullGridStatusHistory } = require('./grid-storage');
+const { getRecentGridStatusHistory, getFullGridStatusHistory, addManualGridStatusRecord, deleteGridStatusRecord } = require('./grid-storage');
 
 // All possible groups
 const ALL_GROUPS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2'];
@@ -321,6 +321,38 @@ app.get('/api/grid-status/export', (req, res) => {
     recordCount: history.length,
     history
   });
+});
+
+// API: Add manual grid status record
+app.post('/api/grid-status', (req, res) => {
+  const { timestamp, status } = req.body;
+
+  if (!timestamp || !status) {
+    return res.status(400).json({ error: 'Missing timestamp or status' });
+  }
+
+  if (!['online', 'offline'].includes(status)) {
+    return res.status(400).json({ error: 'Status must be online or offline' });
+  }
+
+  try {
+    const record = addManualGridStatusRecord(timestamp, status);
+    res.json({ success: true, record });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Delete grid status record
+app.delete('/api/grid-status/:timestamp', (req, res) => {
+  const timestamp = decodeURIComponent(req.params.timestamp);
+
+  const deleted = deleteGridStatusRecord(timestamp);
+  if (deleted) {
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Record not found' });
+  }
 });
 
 // API: System info and diagnostics

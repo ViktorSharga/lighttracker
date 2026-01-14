@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { AppHeader, StatusBar, TabNavigation } from '@/components/layout'
 import { CurrentTab, HistoryTab, StatisticsTab } from '@/views'
+import GridAdmin from '@/views/GridAdmin.vue'
 import { Toaster } from '@/components/ui'
 import { useUIStore } from '@/stores/uiStore'
 import { usePreferencesStore } from '@/stores/preferencesStore'
 import { useStatus } from '@/composables/useStatus'
+
+// Check if admin page should be shown
+const isAdminPage = ref(window.location.hash === '#/grid-admin')
 
 // Initialize stores
 const uiStore = useUIStore()
@@ -32,16 +36,27 @@ const currentTabComponent = computed(() => {
 
 // Initialize application
 onMounted(() => {
+  // Handle hash changes
+  window.addEventListener('hashchange', () => {
+    isAdminPage.value = window.location.hash === '#/grid-admin'
+  })
+
   // Load user preferences from localStorage
   preferencesStore.loadFromStorage()
 
-  // Start status refresh
-  startAutoRefresh()
+  // Start status refresh (only for main app)
+  if (!isAdminPage.value) {
+    startAutoRefresh()
+  }
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-bg-primary text-white">
+  <!-- Admin Page -->
+  <GridAdmin v-if="isAdminPage" />
+
+  <!-- Main App -->
+  <div v-else class="min-h-screen bg-bg-primary text-white">
     <!-- App Header -->
     <AppHeader />
 
