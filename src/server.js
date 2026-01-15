@@ -147,7 +147,8 @@ app.use(express.static(frontendDistPath));
 
 // API: Get current schedule and comparison
 app.get('/api/schedule', (req, res) => {
-  const { current, previous, dateKey } = getLatestSchedules();
+  // preferToday=true ensures we show today's schedule even if tomorrow's is available
+  const { current, previous, dateKey } = getLatestSchedules(null, true);
   const comparison = compareSchedules(current, previous);
 
   res.json({

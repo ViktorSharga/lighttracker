@@ -108,12 +108,13 @@ function addSchedule(schedule) {
   return { added: true, record, isNewDay, dateKey };
 }
 
-function getLatestSchedules(dateKey = null) {
+function getLatestSchedules(dateKey = null, preferToday = false) {
   const schedules = loadSchedules();
 
   if (dateKey && schedules[dateKey]) {
     const daySchedules = schedules[dateKey];
     return {
+      dateKey,
       current: daySchedules[daySchedules.length - 1] || null,
       previous: daySchedules[daySchedules.length - 2] || null,
       allForDay: daySchedules
@@ -124,9 +125,24 @@ function getLatestSchedules(dateKey = null) {
   const dateKeys = Object.keys(schedules).sort().reverse();
 
   if (dateKeys.length === 0) {
-    return { current: null, previous: null, allForDay: [] };
+    return { current: null, previous: null, allForDay: [], dateKey: null };
   }
 
+  // If preferToday is true, try to get today's schedule (Kyiv timezone)
+  if (preferToday) {
+    const todayKyiv = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Kyiv' }); // YYYY-MM-DD
+    if (schedules[todayKyiv]) {
+      const daySchedules = schedules[todayKyiv];
+      return {
+        dateKey: todayKyiv,
+        current: daySchedules[daySchedules.length - 1] || null,
+        previous: daySchedules[daySchedules.length - 2] || null,
+        allForDay: daySchedules
+      };
+    }
+  }
+
+  // Fall back to latest date
   const latestDateKey = dateKeys[0];
   const daySchedules = schedules[latestDateKey];
 
