@@ -202,25 +202,35 @@ The EcoFlow module connects to EcoFlow's MQTT broker to receive real-time device
 3. XOR decrypted using auto-detected key (typically first byte XOR'd to produce valid protobuf start `0x0a`)
 4. Inner `pdata` decoded recursively to extract nested fields
 
-**Grid Status Fields:** For `cmdFunc=1, cmdId=1` (HeartbeatPack) messages:
-- **Primary:** `f2.f4` - continuous AC state indicator: `0` = offline, `2` = online (present in every heartbeat)
-- **Fallback:** `f1.f1` - power source: `1` = battery/offline, `2` = AC/online (only reports transitions)
-- Other fields: `f1.f9` (battery %), `f1.f4`/`f1.f5` (AC voltage/power when connected)
+**Grid Status Detection (Working Solution):**
 
-**Topic:** `/app/device/property/{deviceSN}` receives periodic status updates (~every 30s)
+The implementation uses the ioBroker.ecoflow-mqtt approach:
+1. Subscribe to `/app/{userId}/{sn}/thing/property/get_reply`
+2. Publish `latestQuotas` request (cmdFunc=20, cmdId=1) to get topic
+3. Receive DisplayPropertyUpload with `plug_in_info_ac_in_flag` (field 61)
+
+**Reliable Field:** `plug_in_info_ac_in_flag` from DisplayPropertyUpload
+- `0` = AC disconnected (grid offline)
+- `1` = AC connected (grid online)
+
+**Legacy HeartbeatPack (cmdFunc=1, cmdId=1):** Still received but NOT used for status:
+- `f2.f4` - UNRELIABLE, triggers false positives on inverter state changes
+- `f1.f9` - battery % (reliable)
+- `f1.f15` - battery % float (reliable)
+
+**Topics:**
+- `/app/{userId}/{sn}/thing/property/get_reply` - Receives DisplayPropertyUpload responses
+- `/app/device/property/{deviceSN}` - Legacy topic with HeartbeatPack messages
 
 **Grid Status History:** Status changes are recorded to `data/grid-status.json` with:
 - ISO timestamp of the change
 - Status value (`online`, `offline`, `unknown`)
 - Reference to active schedule (dateKey + fetchedAt) for correlation with outage schedules
 
-**Early Power Return Notifications:** When `ECOFLOW_GROUP` is configured and power returns while within a scheduled outage interval, subscribers of that group receive a Telegram notification showing:
-- Scheduled end time (Ukraine timezone)
-- Actual return time
-- Minutes early (e.g., "На 45 хв раніше")
-
-**TODO - Future Improvements:**
-- [ ] Apply for EcoFlow Developer API access for official REST endpoints
+**Notifications:** When `ECOFLOW_GROUP` is configured:
+- **Early power return**: Power returns during scheduled outage
+- **Early offline**: Power goes offline within 30 min before schedule
+- **Emergency offline**: Power goes offline outside any scheduled outage
 
 ### Parser Regex Patterns
 
@@ -299,6 +309,8 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | GET | `/api/status` | App status, version, Telegram subscriber counts |
 | GET | `/api/grid-status?limit=N` | Real-time grid status + history from EcoFlow RIVER 3 (if configured) |
 | GET | `/api/grid-status/export` | Export full grid status history as JSON |
+| POST | `/api/grid-status` | Add manual grid status record (body: `{timestamp, status}`) |
+| DELETE | `/api/grid-status/:timestamp` | Delete grid status record by ISO timestamp |
 | GET | `/api/system` | System diagnostics: version, uptime, memory, data stats, config |
 | GET | `/api/backup` | Download ZIP archive of all data (schedules, subscribers, grid-status, manifest) |
 | GET | `/health` | Health check endpoint (returns 200 OK when ready) |
@@ -321,6 +333,7 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 | `ECOFLOW_PASSWORD` | - | EcoFlow account password (optional) |
 | `ECOFLOW_DEVICE_SN` | - | RIVER 3 serial number from EcoFlow app |
 | `ECOFLOW_GROUP` | - | Power group where EcoFlow device is located (e.g., "4.1") |
+| `DEBUG_ECOFLOW` | false | Enable verbose EcoFlow MQTT debug logging |
 
 ## Conventions
 
@@ -379,6 +392,9 @@ Change status values: `'worse'` | `'better'` | `'unchanged'`
 - `myGroup` → localStorage
 - `sectionStates` (collapsed/expanded) → localStorage
 - Statistics/history data → memory only (re-fetched on tab switch)
+
+**Admin pages:**
+- Grid Status Admin: `#/grid-admin` - CRUD interface for manual grid status records
 
 ## Deployment Notes
 

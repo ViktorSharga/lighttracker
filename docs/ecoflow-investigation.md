@@ -137,56 +137,59 @@ Checked GitHub repositories:
 // TODO: Re-enable when EcoFlow Developer API provides reliable AC input status
 ```
 
-**What Still Works:**
-- ✅ Early power return notifications (triggered on `offline → online` transition)
-- ✅ Grid status history recording
-- ✅ UI status indicator (though may be stale)
+---
 
-**What's Disabled:**
-- ❌ Early offline notifications
-- ❌ Emergency offline notifications
+### Phase 6: Working Solution (Jan 16, 2026)
+
+**SOLVED!** Implemented the ioBroker approach - request `latestQuotas` to get DisplayPropertyUpload.
+
+**Key discovery:** The device doesn't push DisplayPropertyUpload automatically - you must REQUEST it.
+
+**Working implementation:**
+1. Subscribe to `/app/{userId}/{sn}/thing/property/get_reply`
+2. Publish `latestQuotas` request to `/app/{userId}/{sn}/thing/property/get`
+3. Receive DisplayPropertyUpload with `plug_in_info_ac_in_flag` (field 61)
+
+**Current Status:**
+- ✅ Early power return notifications (online transition)
+- ✅ Early offline notifications (re-enabled)
+- ✅ Emergency offline notifications (re-enabled)
+- ✅ Grid status history recording
+- ✅ Immediate status on startup (via latestQuotas request)
 
 ---
 
 ## Field Reference
 
-### HeartbeatPack (cmdFunc=1, cmdId=1)
+### DisplayPropertyUpload (cmdFunc=254, cmdId=21) - **RELIABLE**
+
+| Field # | Name | Values | Reliable? |
+|---------|------|--------|-----------|
+| 61 | plug_in_info_ac_in_flag | 0=offline, 1=online | ✅ YES |
+| 202 | plug_in_info_ac_charger_flag | 0=not charging, 1=charging | ✅ YES |
+| 54 | pow_get_ac_in | AC input power (W) | ✅ YES |
+| 47 | flow_info_ac_in | AC input flow | ✅ YES |
+
+### HeartbeatPack (cmdFunc=1, cmdId=1) - **UNRELIABLE for AC status**
 
 | Field | Observed Values | Suspected Purpose | Reliable? |
 |-------|-----------------|-------------------|-----------|
 | f1.f1 | 0, 1, 2 | Power source (1=battery, 2=AC) | Transitions only |
-| f1.f4 | ~22000 | Possibly AC voltage (mV) | Unknown |
-| f1.f5 | ~18000-30000 | Possibly AC power (mW) | Unknown |
 | f1.f9 | 0-100 | Battery percentage | Yes |
 | f1.f15 | 0-100 (float) | Battery level (precise) | Yes |
-| f2.f4 | 0, 2 | Inverter/flow state | NO - false positives |
-
-### JSON Fields (RIVER 2, may differ for RIVER 3)
-
-| Field | Purpose |
-|-------|---------|
-| inv.inputWatts | AC input power (W) |
-| inv.acInVol | AC input voltage (mV) |
-| inv.outputWatts | AC output power (W) |
-| bms_emsStatus.chgState | Charging state |
-| pd.wattsInSum | Total input power |
+| f2.f4 | 0, 1, 2 | Inverter/flow state | ❌ NO - false positives |
 
 ---
 
-## Next Steps
+## Solution Summary
 
-1. **Apply for EcoFlow Developer API** - Official REST API with documented endpoints
-   - URL: https://developer.ecoflow.com/
-   - Provides `acInputConnected` status reliably
+The working approach (from ioBroker.ecoflow-mqtt):
+1. Subscribe to `/app/{userId}/{sn}/thing/property/get_reply`
+2. Publish `latestQuotas` request (cmdFunc=20, cmdId=1) to `/app/{userId}/{sn}/thing/property/get`
+3. Receive DisplayPropertyUpload on get_reply with all device properties
+4. Extract `plug_in_info_ac_in_flag` (field 61): 0=offline, 1=online
 
-2. **Alternative Detection Methods:**
-   - Monitor `inv.inputWatts` > 0 from JSON messages (if available)
-   - Use `f1.f4`/`f1.f5` thresholds (AC voltage/power)
-   - Poll device status on startup via REST API
-
-3. **Community Resources:**
-   - Watch [hassio-ecoflow-cloud](https://github.com/tolwi/hassio-ecoflow-cloud) for RIVER 3 support
-   - Check EcoFlow Discord/forums for protocol documentation
+See `docs/ecoflow-developer-api.md` for full implementation details.
 
 ---
 
@@ -200,4 +203,5 @@ Checked GitHub repositories:
 | `142e3e0` | Use f2.f4 as primary indicator (later found unreliable) |
 | `57117f2` | Add early/emergency offline notifications |
 | `f10a9d2` | Fix offline notification to trigger from unknown state |
-| `79cd893` | **Disable offline notifications** - f2.f4 unreliable |
+| `79cd893` | Disable offline notifications - f2.f4 unreliable |
+| Jan 16, 2026 | **✅ Working solution** - ioBroker approach with latestQuotas request |

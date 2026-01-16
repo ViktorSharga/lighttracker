@@ -4,8 +4,20 @@
  * Connects to EcoFlow MQTT broker to detect real-time grid power status.
  * Uses protobuf messages with XOR encryption from the device.
  *
- * Grid status is determined from HeartbeatPack messages (cmdFunc=1, cmdId=1):
- * - f1.f1 (powerSource): 1 = battery/standby (offline), 2 = AC charging (online)
+ * RIVER 3 message types (cmdFunc:cmdId):
+ * - 254:21 DisplayPropertyUpload: Contains plug_in_info_ac_in_flag (reliable AC status)
+ * - 254:22 RuntimePropertyUpload: Contains diagnostic data
+ * - 32:50  BMSHeartBeatReport: Battery status
+ * - 1:1    HeartbeatPack: Basic heartbeat (unreliable for AC status)
+ *
+ * To get DisplayPropertyUpload, we must REQUEST it by publishing:
+ * - Topic: /app/{userId}/{deviceSN}/thing/property/get
+ * - Payload: protobuf with cmdFunc=20, cmdId=1 (latestQuotas request)
+ *
+ * Primary AC detection field (in DisplayPropertyUpload):
+ * - plug_in_info_ac_in_flag (field 61): 0 = disconnected, 1 = connected
+ *
+ * See: https://github.com/foxthefox/ioBroker.ecoflow-mqtt
  */
 
 const mqtt = require('mqtt');
@@ -21,6 +33,29 @@ let userId = null;
 let getLatestSchedulesFn = null; // Function to get current schedule for history recording
 let onGridOnlineCallback = null; // Callback for when grid comes back online
 let onGridOfflineCallback = null; // Callback for when grid goes offline
+let pollInterval = null; // Periodic polling interval
+
+// Debug logging - tracks seen cmdFunc/cmdId combinations
+const seenMessageTypes = new Set();
+let lastDebugDump = 0;
+
+// Message type constants (from ioBroker.ecoflow-mqtt ef_river3_data.js)
+const MSG_TYPES = {
+  DISPLAY_PROPERTY_UPLOAD: { cmdFunc: 254, cmdId: 21 },
+  RUNTIME_PROPERTY_UPLOAD: { cmdFunc: 254, cmdId: 22 },
+  BMS_HEARTBEAT_REPORT: { cmdFunc: 32, cmdId: 50 },
+  HEARTBEAT_PACK: { cmdFunc: 1, cmdId: 1 },
+  LATEST_QUOTAS_REQUEST: { cmdFunc: 20, cmdId: 1 }
+};
+
+// DisplayPropertyUpload field numbers (from protobuf schema)
+const DISPLAY_FIELDS = {
+  PLUG_IN_INFO_AC_IN_FLAG: 61,      // 0=disconnected, 1=connected (MOST RELIABLE)
+  PLUG_IN_INFO_AC_CHARGER_FLAG: 202, // 0=not charging, 1=charging
+  POW_GET_AC_IN: 54,                 // AC input power (float)
+  FLOW_INFO_AC_IN: 47,               // AC input switch (0=off, 2=on)
+  BMS_BATT_SOC: 242,                 // Battery SOC (float)
+};
 
 // Environment variables
 const ECOFLOW_EMAIL = process.env.ECOFLOW_EMAIL;
@@ -28,6 +63,7 @@ const ECOFLOW_PASSWORD = process.env.ECOFLOW_PASSWORD;
 const ECOFLOW_DEVICE_SN = process.env.ECOFLOW_DEVICE_SN;
 const ECOFLOW_API_HOST = process.env.ECOFLOW_API_HOST || 'api.ecoflow.com';
 const ECOFLOW_GROUP = process.env.ECOFLOW_GROUP;
+const DEBUG_ECOFLOW = process.env.DEBUG_ECOFLOW === 'true';
 
 /**
  * Get current grid status
@@ -74,6 +110,10 @@ async function initEcoFlow(getLatestSchedules, onGridOnline, onGridOffline) {
  * Cleanup on shutdown
  */
 function closeEcoFlow() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
   if (mqttClient) {
     console.log('[EcoFlow] Closing connection...');
     mqttClient.end();
@@ -190,13 +230,54 @@ async function connectMQTT(credentials) {
     console.log('[EcoFlow] Connected to MQTT broker');
     isConnected = true;
 
-    const topic = `/app/device/property/${ECOFLOW_DEVICE_SN}`;
-    mqttClient.subscribe(topic, (err) => {
+    // Topic structure based on ioBroker.ecoflow-mqtt:
+    // - /app/{userId}/{deviceSN}/thing/property/get - publish requests here
+    // - /app/{userId}/{deviceSN}/thing/property/get_reply - receive responses here
+    // - /app/{userId}/{deviceSN}/thing/property/set - publish commands here
+    // - /app/{userId}/{deviceSN}/thing/property/set_reply - receive command acks
+    // Note: Wildcards may not be allowed on EcoFlow's MQTT broker
+
+    const topics = [
+      // Thing property topics (for latestQuotas responses)
+      `/app/${userId}/${ECOFLOW_DEVICE_SN}/thing/property/get_reply`,
+      `/app/${userId}/${ECOFLOW_DEVICE_SN}/thing/property/set_reply`,
+      // Legacy topic (receives HeartbeatPack)
+      `/app/device/property/${ECOFLOW_DEVICE_SN}`,
+    ];
+
+    if (DEBUG_ECOFLOW) {
+      console.log(`[EcoFlow DEBUG] UserId: ${userId}`);
+      console.log(`[EcoFlow DEBUG] Subscribing to topics: ${topics.join(', ')}`);
+    }
+
+    mqttClient.subscribe(topics, (err, granted) => {
       if (err) {
-        console.error('[EcoFlow] Failed to subscribe to device topic');
+        console.error('[EcoFlow] Failed to subscribe to device topics:', err.message);
+        // Try to subscribe to just the legacy topic as fallback
+        mqttClient.subscribe(`/app/device/property/${ECOFLOW_DEVICE_SN}`, (fallbackErr) => {
+          if (fallbackErr) {
+            console.error('[EcoFlow] Fallback subscription also failed');
+          } else {
+            console.log('[EcoFlow] Fallback: subscribed to legacy topic only');
+            requestDeviceStatus();
+          }
+        });
       } else {
         console.log(`[EcoFlow] Subscribed to device ${maskSN(ECOFLOW_DEVICE_SN)}`);
+        if (DEBUG_ECOFLOW && granted) {
+          console.log(`[EcoFlow DEBUG] Granted subscriptions:`, granted.map(g => `${g.topic} (qos=${g.qos})`).join(', '));
+        }
+
+        // Request device status immediately
         requestDeviceStatus();
+
+        // Set up periodic polling every 5 minutes (like ioBroker does)
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(() => {
+          if (isConnected) {
+            requestDeviceStatus();
+          }
+        }, 5 * 60 * 1000);
       }
     });
   });
@@ -220,11 +301,16 @@ async function connectMQTT(credentials) {
 }
 
 /**
- * Request current device status
+ * Request current device status by sending latestQuotas request
+ *
+ * For RIVER 3, we need to send a protobuf message with cmdFunc=20, cmdId=1
+ * This triggers the device to respond with DisplayPropertyUpload (cmdFunc=254, cmdId=21)
  */
 function requestDeviceStatus() {
   const topic = `/app/${userId}/${ECOFLOW_DEVICE_SN}/thing/property/get`;
-  const payload = JSON.stringify({
+
+  // Try JSON format first (works for some devices/firmware versions)
+  const jsonPayload = JSON.stringify({
     from: 'ios',
     operateType: 'latestQuotas',
     id: Date.now().toString(),
@@ -233,13 +319,105 @@ function requestDeviceStatus() {
     version: '1.0'
   });
 
-  mqttClient.publish(topic, payload, (err) => {
+  // Also create protobuf request (required for RIVER 3)
+  // Format: HeaderMessage containing a Header with cmdFunc=20, cmdId=1
+  const protoPayload = createLatestQuotasRequest();
+
+  // Send JSON request
+  mqttClient.publish(topic, jsonPayload, (err) => {
     if (err) {
-      console.error('[EcoFlow] Failed to request device status');
-    } else {
-      console.log('[EcoFlow] Requested device status');
+      console.error('[EcoFlow] Failed to send JSON latestQuotas request');
+    } else if (DEBUG_ECOFLOW) {
+      console.log('[EcoFlow DEBUG] Sent JSON latestQuotas request');
     }
   });
+
+  // Send protobuf request
+  if (protoPayload) {
+    mqttClient.publish(topic, protoPayload, (err) => {
+      if (err) {
+        console.error('[EcoFlow] Failed to send protobuf latestQuotas request');
+      } else {
+        console.log('[EcoFlow] Requested device status (protobuf)');
+      }
+    });
+  }
+}
+
+/**
+ * Create a protobuf latestQuotas request message
+ *
+ * Based on ioBroker.ecoflow-mqtt ef_river3_data.js:
+ * latestQuotas: { msg: { cmdFunc: 20, cmdId: 1, dataLen: 0 } }
+ *
+ * The message structure is:
+ * HeaderMessage {
+ *   Header header = 1 {
+ *     bytes pdata = 1;      // empty for request
+ *     int32 src = 2;        // source (32 = app)
+ *     int32 dest = 3;       // destination (2 = device)
+ *     int32 cmdFunc = 4;    // 20 for latestQuotas
+ *     int32 cmdId = 5;      // 1
+ *     int32 needAck = 11;   // 1
+ *     int32 seq = 14;       // sequence number
+ *   }
+ * }
+ */
+function createLatestQuotasRequest() {
+  try {
+    const seq = Math.floor(Date.now() / 1000) % 0xFFFFFFFF;
+
+    // Build header fields manually using protobuf encoding
+    // Field format: (fieldNumber << 3) | wireType
+    // wireType 0 = varint, wireType 2 = length-delimited
+
+    const headerFields = [];
+
+    // pdata (field 1, wireType 2 = length-delimited) - empty bytes
+    headerFields.push(0x0a, 0x00); // field 1, length 0
+
+    // src (field 2, wireType 0 = varint) = 32 (app)
+    headerFields.push(0x10, 0x20); // field 2, value 32
+
+    // dest (field 3, wireType 0 = varint) = 2 (device)
+    headerFields.push(0x18, 0x02); // field 3, value 2
+
+    // cmdFunc (field 4, wireType 0 = varint) = 20
+    headerFields.push(0x20, 0x14); // field 4, value 20
+
+    // cmdId (field 5, wireType 0 = varint) = 1
+    headerFields.push(0x28, 0x01); // field 5, value 1
+
+    // needAck (field 11, wireType 0 = varint) = 1
+    headerFields.push(0x58, 0x01); // field 11, value 1
+
+    // seq (field 14, wireType 0 = varint)
+    const seqBytes = encodeVarint(seq);
+    headerFields.push(0x70, ...seqBytes); // field 14
+
+    const headerBuffer = Buffer.from(headerFields);
+
+    // Wrap in HeaderMessage (field 1, length-delimited)
+    const msgFields = [0x0a, headerBuffer.length, ...headerBuffer];
+
+    return Buffer.from(msgFields);
+  } catch (err) {
+    console.error('[EcoFlow] Failed to create latestQuotas request:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Encode a number as a protobuf varint
+ */
+function encodeVarint(value) {
+  const bytes = [];
+  while (value > 127) {
+    bytes.push((value & 0x7F) | 0x80);
+    value >>>= 7;
+  }
+  bytes.push(value & 0x7F);
+  return bytes;
 }
 
 // ============================================================================
@@ -251,20 +429,74 @@ function requestDeviceStatus() {
  */
 function handleMessage(topic, payload) {
   try {
+    if (DEBUG_ECOFLOW) {
+      console.log(`[EcoFlow DEBUG] Message on topic: ${topic} (${payload.length} bytes)`);
+      // Show first bytes for debugging format detection
+      if (topic.includes('get_reply') || topic.includes('set_reply')) {
+        const firstBytes = payload.slice(0, 20);
+        console.log(`[EcoFlow DEBUG] First 20 bytes: ${firstBytes.toString('hex')}`);
+        console.log(`[EcoFlow DEBUG] As string: ${payload.toString().substring(0, 100)}`);
+      }
+    }
+
     // Try JSON first (older protocol or latestQuotas response)
     const raw = payload.toString();
     if (raw.startsWith('{')) {
       const data = JSON.parse(raw);
 
+      if (DEBUG_ECOFLOW) {
+        console.log('[EcoFlow DEBUG] JSON message received on', topic);
+        if (data.params) {
+          const keys = Object.keys(data.params);
+          console.log(`[EcoFlow DEBUG] JSON params (${keys.length} keys):`, keys.slice(0, 20).join(', ') + (keys.length > 20 ? '...' : ''));
+
+          // Check for AC-related fields
+          const acFields = keys.filter(k => /ac|plug|pow|flow/i.test(k));
+          if (acFields.length > 0) {
+            console.log('[EcoFlow DEBUG] AC-related fields found:', acFields.join(', '));
+            for (const key of acFields.slice(0, 10)) {
+              console.log(`[EcoFlow DEBUG]   ${key}: ${data.params[key]}`);
+            }
+          }
+        } else {
+          console.log('[EcoFlow DEBUG] JSON keys:', Object.keys(data).join(', '));
+        }
+      }
+
       // Check for latestQuotas response with AC power info
       if (data.params) {
-        // Check various AC input indicators
+        // PRIORITY 1: plugInInfoAcInFlag (MOST RELIABLE)
         if (data.params.plugInInfoAcInFlag !== undefined) {
-          updateGridStatus(data.params.plugInInfoAcInFlag === 1 ? 'online' : 'offline', 'json.plugInInfoAcInFlag');
-        } else if (data.params.acInputPower !== undefined) {
+          updateGridStatus(data.params.plugInInfoAcInFlag === 1 ? 'online' : 'offline', `json.plugInInfoAcInFlag=${data.params.plugInInfoAcInFlag}`);
+          return;
+        }
+
+        // PRIORITY 2: AC input voltage (> 100V = online)
+        if (data.params.plugInInfoAcInVol !== undefined && data.params.plugInInfoAcInVol > 100) {
+          updateGridStatus('online', `json.plugInInfoAcInVol=${data.params.plugInInfoAcInVol}V`);
+          return;
+        }
+
+        // PRIORITY 3: AC input power (> 0 = online)
+        if (data.params.powGetAcIn !== undefined && data.params.powGetAcIn > 0) {
+          updateGridStatus('online', `json.powGetAcIn=${data.params.powGetAcIn}W`);
+          return;
+        }
+
+        // PRIORITY 4: flowInfoAcIn (0=off, 2=on)
+        if (data.params.flowInfoAcIn !== undefined) {
+          updateGridStatus(data.params.flowInfoAcIn === 2 ? 'online' : 'offline', `json.flowInfoAcIn=${data.params.flowInfoAcIn}`);
+          return;
+        }
+
+        // Legacy fallbacks
+        if (data.params.acInputPower !== undefined) {
           updateGridStatus(data.params.acInputPower > 0 ? 'online' : 'offline', `json.acInputPower=${data.params.acInputPower}`);
-        } else if (data.params.acInputFrequency !== undefined) {
+          return;
+        }
+        if (data.params.acInputFrequency !== undefined) {
           updateGridStatus(data.params.acInputFrequency > 0 ? 'online' : 'offline', `json.acInputFrequency=${data.params.acInputFrequency}`);
+          return;
         }
       }
       return;
@@ -281,7 +513,19 @@ function handleMessage(topic, payload) {
       }
     }
 
-    // Decode as protobuf HeaderMessage
+    // Check if this is a get_reply message (different format - direct protobuf, not HeaderMessage)
+    if (topic.includes('get_reply')) {
+      try {
+        processGetReply(binaryPayload);
+        return;
+      } catch (err) {
+        if (DEBUG_ECOFLOW) {
+          console.log('[EcoFlow DEBUG] get_reply decode error:', err.message);
+        }
+      }
+    }
+
+    // Decode as protobuf HeaderMessage (for legacy topic)
     const reader = protobuf.Reader.create(binaryPayload);
     const headerMsg = decodeHeaderMessage(reader, binaryPayload.length);
 
@@ -290,6 +534,72 @@ function handleMessage(topic, payload) {
     }
   } catch {
     // Ignore parsing errors for unknown message formats
+  }
+}
+
+/**
+ * Process a get_reply message (response to latestQuotas request)
+ *
+ * The get_reply format is different from HeartbeatPack:
+ * - No HeaderMessage wrapper
+ * - Direct nested protobuf containing device quota data
+ * - Field structure: outer message -> inner pdata -> DisplayPropertyUpload fields
+ */
+function processGetReply(payload) {
+  const reader = protobuf.Reader.create(payload);
+  const data = decodeProtobufFlat(reader, payload.length);
+
+  if (DEBUG_ECOFLOW) {
+    const keys = Object.keys(data);
+    console.log(`[EcoFlow DEBUG] get_reply decoded (${keys.length} fields)`);
+
+    // Look for AC-related field numbers
+    const acFieldKeys = keys.filter(k => {
+      const fieldNum = k.match(/f(\d+)/)?.[1];
+      return fieldNum && [47, 54, 61, 202].includes(parseInt(fieldNum));
+    });
+    if (acFieldKeys.length > 0) {
+      console.log('[EcoFlow DEBUG] Potential AC fields:', acFieldKeys.join(', '));
+      for (const key of acFieldKeys) {
+        console.log(`[EcoFlow DEBUG]   ${key}: ${data[key]}`);
+      }
+    }
+  }
+
+  // The data should contain DisplayPropertyUpload fields directly or nested
+  const allFields = flattenNumericFields(data);
+
+  // Check for AC input flag (field 61 in DisplayPropertyUpload)
+  const acInFlag = findField(allFields, DISPLAY_FIELDS.PLUG_IN_INFO_AC_IN_FLAG);
+  if (acInFlag !== null && (acInFlag === 0 || acInFlag === 1)) {
+    updateGridStatus(acInFlag === 1 ? 'online' : 'offline', `get_reply.plug_in_info_ac_in_flag=${acInFlag}`);
+    return;
+  }
+
+  // Check for AC input power (field 54)
+  const acPower = findField(allFields, DISPLAY_FIELDS.POW_GET_AC_IN);
+  if (acPower !== null && typeof acPower === 'number') {
+    updateGridStatus(acPower > 0 ? 'online' : 'offline', `get_reply.pow_get_ac_in=${acPower}W`);
+    return;
+  }
+
+  // Check for flow info AC in (field 47)
+  const flowAcIn = findField(allFields, DISPLAY_FIELDS.FLOW_INFO_AC_IN);
+  if (flowAcIn !== null && (flowAcIn === 0 || flowAcIn === 2)) {
+    updateGridStatus(flowAcIn === 2 ? 'online' : 'offline', `get_reply.flow_info_ac_in=${flowAcIn}`);
+    return;
+  }
+
+  // Check for charger flag (field 202)
+  const chargerFlag = findField(allFields, DISPLAY_FIELDS.PLUG_IN_INFO_AC_CHARGER_FLAG);
+  if (chargerFlag !== null && (chargerFlag === 0 || chargerFlag === 1)) {
+    updateGridStatus(chargerFlag === 1 ? 'online' : 'offline', `get_reply.plug_in_info_ac_charger_flag=${chargerFlag}`);
+    return;
+  }
+
+  if (DEBUG_ECOFLOW) {
+    console.log('[EcoFlow DEBUG] get_reply processed but no AC status fields found');
+    console.log('[EcoFlow DEBUG] All field keys:', Object.keys(allFields).slice(0, 50).join(', '));
   }
 }
 
@@ -314,39 +624,188 @@ function processHeader(header) {
 
 /**
  * Extract grid status from decoded protobuf data
+ *
+ * Message type identification (cmdFunc:cmdId):
+ * - 254:21 = DisplayPropertyUpload (BEST - contains plug_in_info_ac_in_flag)
+ * - 254:22 = RuntimePropertyUpload (diagnostic data)
+ * - 32:50  = BMSHeartBeatReport (battery data)
+ * - 1:1    = HeartbeatPack (unreliable for AC status)
+ *
+ * RIVER 3 field reference (from ioBroker.ecoflow-mqtt):
+ * - plug_in_info_ac_in_flag (field 61): 0=disconnected, 1=connected - MOST RELIABLE
+ * - pow_get_ac_in (field 54): AC input power (float)
+ * - flow_info_ac_in (field 47): AC input switch (0=off, 2=on)
+ * - plug_in_info_ac_charger_flag (field 202): Charger status
  */
 function extractGridStatus(data, header) {
   const allFields = flattenNumericFields(data);
+  const msgKey = `${header.cmdFunc}:${header.cmdId}`;
 
-  // HeartbeatPack (cmdFunc=1, cmdId=1) contains power source fields
-  if (header.cmdFunc === 1 && header.cmdId === 1) {
-    // Primary: f2.f4 - continuous AC state indicator (0=offline, 2=online)
-    // Present in every heartbeat, gives immediate state on connect
-    const acState = allFields['f2.f4'];
-    if (typeof acState === 'number') {
-      updateGridStatus(acState === 2 ? 'online' : 'offline', `acState(f2.f4)=${acState}`);
+  // Debug: Log new message types we haven't seen before
+  if (!seenMessageTypes.has(msgKey)) {
+    seenMessageTypes.add(msgKey);
+
+    // Identify message type
+    let msgType = 'Unknown';
+    if (header.cmdFunc === MSG_TYPES.DISPLAY_PROPERTY_UPLOAD.cmdFunc &&
+        header.cmdId === MSG_TYPES.DISPLAY_PROPERTY_UPLOAD.cmdId) {
+      msgType = 'DisplayPropertyUpload';
+    } else if (header.cmdFunc === MSG_TYPES.RUNTIME_PROPERTY_UPLOAD.cmdFunc &&
+               header.cmdId === MSG_TYPES.RUNTIME_PROPERTY_UPLOAD.cmdId) {
+      msgType = 'RuntimePropertyUpload';
+    } else if (header.cmdFunc === MSG_TYPES.BMS_HEARTBEAT_REPORT.cmdFunc &&
+               header.cmdId === MSG_TYPES.BMS_HEARTBEAT_REPORT.cmdId) {
+      msgType = 'BMSHeartBeatReport';
+    } else if (header.cmdFunc === MSG_TYPES.HEARTBEAT_PACK.cmdFunc &&
+               header.cmdId === MSG_TYPES.HEARTBEAT_PACK.cmdId) {
+      msgType = 'HeartbeatPack';
+    }
+
+    console.log(`[EcoFlow] New message type: ${msgType} (cmdFunc=${header.cmdFunc}, cmdId=${header.cmdId})`);
+
+    if (DEBUG_ECOFLOW) {
+      console.log(`[EcoFlow DEBUG] Fields in ${msgType}:`, JSON.stringify(allFields, null, 2));
+    }
+  }
+
+  // Periodic debug dump of all fields (every 5 minutes if DEBUG enabled)
+  if (DEBUG_ECOFLOW && Date.now() - lastDebugDump > 300000) {
+    lastDebugDump = Date.now();
+    console.log(`[EcoFlow DEBUG] Message ${msgKey} fields:`, Object.keys(allFields).join(', '));
+  }
+
+  // ============================================================================
+  // PRIORITY 1: DisplayPropertyUpload (cmdFunc=254, cmdId=21)
+  // This is the BEST source for AC input status
+  // ============================================================================
+  if (header.cmdFunc === MSG_TYPES.DISPLAY_PROPERTY_UPLOAD.cmdFunc &&
+      header.cmdId === MSG_TYPES.DISPLAY_PROPERTY_UPLOAD.cmdId) {
+
+    // Field 61: plug_in_info_ac_in_flag (0=disconnected, 1=connected)
+    const acInFlag = findField(allFields, DISPLAY_FIELDS.PLUG_IN_INFO_AC_IN_FLAG);
+    if (acInFlag !== null && (acInFlag === 0 || acInFlag === 1)) {
+      updateGridStatus(acInFlag === 1 ? 'online' : 'offline', `DisplayPropertyUpload.plug_in_info_ac_in_flag=${acInFlag}`);
       return;
     }
 
-    // Fallback: f1.f1 - power source (1=battery/offline, 2=AC/online)
-    // Only reports on transitions, not continuous state
-    const powerSource = allFields['f1.f1'];
-    if (typeof powerSource === 'number' && powerSource !== 0) {
-      updateGridStatus(powerSource === 2 ? 'online' : 'offline', `powerSource(f1.f1)=${powerSource}`);
+    // Field 54: pow_get_ac_in (AC input power)
+    const acPower = findField(allFields, DISPLAY_FIELDS.POW_GET_AC_IN);
+    if (acPower !== null && typeof acPower === 'number') {
+      updateGridStatus(acPower > 0 ? 'online' : 'offline', `DisplayPropertyUpload.pow_get_ac_in=${acPower}W`);
+      return;
+    }
+
+    // Field 47: flow_info_ac_in (0=off, 2=on)
+    const flowAcIn = findField(allFields, DISPLAY_FIELDS.FLOW_INFO_AC_IN);
+    if (flowAcIn !== null && (flowAcIn === 0 || flowAcIn === 2)) {
+      updateGridStatus(flowAcIn === 2 ? 'online' : 'offline', `DisplayPropertyUpload.flow_info_ac_in=${flowAcIn}`);
+      return;
+    }
+
+    // Field 202: plug_in_info_ac_charger_flag
+    const chargerFlag = findField(allFields, DISPLAY_FIELDS.PLUG_IN_INFO_AC_CHARGER_FLAG);
+    if (chargerFlag !== null && (chargerFlag === 0 || chargerFlag === 1)) {
+      updateGridStatus(chargerFlag === 1 ? 'online' : 'offline', `DisplayPropertyUpload.plug_in_info_ac_charger_flag=${chargerFlag}`);
+      return;
+    }
+
+    if (DEBUG_ECOFLOW) {
+      console.log('[EcoFlow DEBUG] DisplayPropertyUpload received but no AC fields found');
+    }
+  }
+
+  // ============================================================================
+  // PRIORITY 2: Generic search for plug_in_info_ac_in_flag in any message
+  // ============================================================================
+
+  // Search for field 61 (plug_in_info_ac_in_flag) at any nesting level
+  const acFlagCandidates = [
+    `f${DISPLAY_FIELDS.PLUG_IN_INFO_AC_IN_FLAG}`,  // f61
+    'f1.f61', 'f2.f61', 'f3.f61', 'f7.f61',        // nested
+  ];
+
+  for (const key of acFlagCandidates) {
+    const value = allFields[key];
+    if (typeof value === 'number' && (value === 0 || value === 1)) {
+      updateGridStatus(value === 1 ? 'online' : 'offline', `plug_in_info_ac_in_flag(${key})=${value}`);
       return;
     }
   }
 
-  // Fallback: check for official plugInInfoAcInFlag (field 61) if present
-  // This field appears in DisplayPropertyUpload messages on some device models
+  // Search all fields for any ending in .f61
   const f61Key = Object.keys(allFields).find(k => k === 'f61' || k.endsWith('.f61'));
   if (f61Key && typeof allFields[f61Key] === 'number') {
-    updateGridStatus(allFields[f61Key] === 1 ? 'online' : 'offline', `${f61Key}=${allFields[f61Key]}`);
-    return;
+    const value = allFields[f61Key];
+    if (value === 0 || value === 1) {
+      updateGridStatus(value === 1 ? 'online' : 'offline', `plug_in_info_ac_in_flag(${f61Key})=${value}`);
+      return;
+    }
+  }
+
+  // ============================================================================
+  // PRIORITY 3: Check AC input power/voltage fields
+  // ============================================================================
+
+  // pow_get_ac_in (field 54)
+  const acPowerCandidates = [`f${DISPLAY_FIELDS.POW_GET_AC_IN}`, 'f1.f54', 'f7.f54'];
+  for (const key of acPowerCandidates) {
+    const value = allFields[key];
+    if (typeof value === 'number' && value > 0) {
+      updateGridStatus('online', `pow_get_ac_in(${key})=${value}W`);
+      return;
+    }
+  }
+
+  // flow_info_ac_in (field 47)
+  const flowAcCandidates = [`f${DISPLAY_FIELDS.FLOW_INFO_AC_IN}`, 'f1.f47', 'f7.f47'];
+  for (const key of flowAcCandidates) {
+    const value = allFields[key];
+    if (typeof value === 'number' && (value === 0 || value === 2)) {
+      updateGridStatus(value === 2 ? 'online' : 'offline', `flow_info_ac_in(${key})=${value}`);
+      return;
+    }
+  }
+
+  // ============================================================================
+  // PRIORITY 4 (FALLBACK): HeartbeatPack - UNRELIABLE, only log for debugging
+  // ============================================================================
+  if (header.cmdFunc === MSG_TYPES.HEARTBEAT_PACK.cmdFunc &&
+      header.cmdId === MSG_TYPES.HEARTBEAT_PACK.cmdId) {
+    if (DEBUG_ECOFLOW) {
+      const acState = allFields['f2.f4'];
+      const powerSource = allFields['f1.f1'];
+      console.log(`[EcoFlow DEBUG] HeartbeatPack: f2.f4=${acState}, f1.f1=${powerSource} (not used for status)`);
+    }
   }
 
   // Update timestamp even without status change
   lastUpdate = new Date().toISOString();
+}
+
+/**
+ * Find a field by its protobuf field number at any nesting level
+ */
+function findField(allFields, fieldNumber) {
+  // Direct field
+  const directKey = `f${fieldNumber}`;
+  if (allFields[directKey] !== undefined) {
+    return allFields[directKey];
+  }
+
+  // Nested in pdata (field 1)
+  const pdataKey = `f1.f${fieldNumber}`;
+  if (allFields[pdataKey] !== undefined) {
+    return allFields[pdataKey];
+  }
+
+  // Search all keys for this field number
+  for (const key of Object.keys(allFields)) {
+    if (key === directKey || key.endsWith(`.f${fieldNumber}`)) {
+      return allFields[key];
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -390,16 +849,15 @@ function updateGridStatus(newStatus, source) {
       }
     }
 
-    // NOTE: Offline notifications disabled - f2.f4 field unreliable for RIVER 3
-    // The field triggers on inverter state changes, not actual grid status
-    // TODO: Re-enable when EcoFlow Developer API provides reliable AC input status
-    // if (newStatus === 'offline' && previousStatus !== 'offline' && onGridOfflineCallback) {
-    //   try {
-    //     onGridOfflineCallback();
-    //   } catch (err) {
-    //     console.error('[EcoFlow] Error in onGridOffline callback:', err.message);
-    //   }
-    // }
+    // Trigger callback when power goes offline
+    // NOTE: Now using reliable plug_in_info_ac_in_flag from DisplayPropertyUpload (Jan 16, 2026)
+    if (newStatus === 'offline' && previousStatus !== 'offline' && onGridOfflineCallback) {
+      try {
+        onGridOfflineCallback();
+      } catch (err) {
+        console.error('[EcoFlow] Error in onGridOffline callback:', err.message);
+      }
+    }
   }
   lastUpdate = new Date().toISOString();
 }
