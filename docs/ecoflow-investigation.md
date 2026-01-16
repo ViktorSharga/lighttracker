@@ -139,57 +139,80 @@ Checked GitHub repositories:
 
 ---
 
-### Phase 6: Working Solution (Jan 16, 2026)
+### Phase 6: ioBroker Approach (Jan 16, 2026) - FAILED
 
-**SOLVED!** Implemented the ioBroker approach - request `latestQuotas` to get DisplayPropertyUpload.
+**Attempted:** Implemented the ioBroker approach - request `latestQuotas` to get DisplayPropertyUpload.
 
-**Key discovery:** The device doesn't push DisplayPropertyUpload automatically - you must REQUEST it.
-
-**Working implementation:**
+**Implementation:**
 1. Subscribe to `/app/{userId}/{sn}/thing/property/get_reply`
 2. Publish `latestQuotas` request to `/app/{userId}/{sn}/thing/property/get`
 3. Receive DisplayPropertyUpload with `plug_in_info_ac_in_flag` (field 61)
 
+**Result:** Still produced false positives. At 01:34 received "early power return" notification when grid was still offline.
+
+---
+
+### Phase 7: Rollback to Simple Detection (Jan 17, 2026)
+
+**Problem:** DisplayPropertyUpload fields (61, 47, 54, 202) all proved unreliable for RIVER 3 - producing false positive "online" readings when grid was actually offline.
+
+**Decision:** Roll back to the simplest, most reliable approach:
+- **Only use HeartbeatPack f1.f1=2** for online detection (AC charging mode)
+- **Disable ALL offline detection** - no reliable indicator found
+- Remove all complex DisplayPropertyUpload logic, latestQuotas polling, and multi-field priority system
+
 **Current Status:**
-- ✅ Early power return notifications (online transition)
-- ✅ Early offline notifications (re-enabled)
-- ✅ Emergency offline notifications (re-enabled)
-- ✅ Grid status history recording
-- ✅ Immediate status on startup (via latestQuotas request)
+- ✅ Early power return notifications (online transition via f1.f1=2)
+- ❌ Offline notifications DISABLED - no reliable indicator
+- ✅ Grid status history recording (online transitions only)
+- ⚠️ Status shows "unknown" after restart until f1.f1=2 is received
+
+**Code simplified:** Removed ~500 lines of complex detection logic.
 
 ---
 
 ## Field Reference
 
-### DisplayPropertyUpload (cmdFunc=254, cmdId=21) - **RELIABLE**
+### HeartbeatPack (cmdFunc=1, cmdId=1) - **ONLY RELIABLE SOURCE**
+
+| Field | Observed Values | Purpose | Reliable? |
+|-------|-----------------|---------|-----------|
+| f1.f1 | 0, 1, 2 | Power source (1=battery, 2=AC) | ✅ f1.f1=2 ONLY |
+| f1.f9 | 0-100 | Battery percentage | ✅ Yes |
+| f1.f15 | 0-100 (float) | Battery level (precise) | ✅ Yes |
+| f2.f4 | 0, 1, 2 | Inverter/flow state | ❌ NO - false positives |
+
+**Important:** f1.f1=1 is AMBIGUOUS - could mean:
+- Grid offline (battery discharging)
+- Grid online but battery full (not charging)
+- Grid online but charging paused
+
+### DisplayPropertyUpload (cmdFunc=254, cmdId=21) - **UNRELIABLE FOR RIVER 3**
 
 | Field # | Name | Values | Reliable? |
 |---------|------|--------|-----------|
-| 61 | plug_in_info_ac_in_flag | 0=offline, 1=online | ✅ YES |
-| 202 | plug_in_info_ac_charger_flag | 0=not charging, 1=charging | ✅ YES |
-| 54 | pow_get_ac_in | AC input power (W) | ✅ YES |
-| 47 | flow_info_ac_in | AC input flow | ✅ YES |
-
-### HeartbeatPack (cmdFunc=1, cmdId=1) - **UNRELIABLE for AC status**
-
-| Field | Observed Values | Suspected Purpose | Reliable? |
-|-------|-----------------|-------------------|-----------|
-| f1.f1 | 0, 1, 2 | Power source (1=battery, 2=AC) | Transitions only |
-| f1.f9 | 0-100 | Battery percentage | Yes |
-| f1.f15 | 0-100 (float) | Battery level (precise) | Yes |
-| f2.f4 | 0, 1, 2 | Inverter/flow state | ❌ NO - false positives |
+| 61 | plug_in_info_ac_in_flag | 0=offline, 1=online | ❌ False positives |
+| 202 | plug_in_info_ac_charger_flag | 0=not charging, 1=charging | ❌ False positives |
+| 54 | pow_get_ac_in | AC input power (W) | ❌ False positives |
+| 47 | flow_info_ac_in | AC input flow | ❌ False positives |
 
 ---
 
-## Solution Summary
+## Current Solution (Jan 17, 2026)
 
-The working approach (from ioBroker.ecoflow-mqtt):
-1. Subscribe to `/app/{userId}/{sn}/thing/property/get_reply`
-2. Publish `latestQuotas` request (cmdFunc=20, cmdId=1) to `/app/{userId}/{sn}/thing/property/get`
-3. Receive DisplayPropertyUpload on get_reply with all device properties
-4. Extract `plug_in_info_ac_in_flag` (field 61): 0=offline, 1=online
+**Simple HeartbeatPack detection only:**
+1. Subscribe to `/app/device/property/{deviceSN}` (legacy topic)
+2. Receive HeartbeatPack messages (cmdFunc=1, cmdId=1)
+3. Check f1.f1 field: **only f1.f1=2 reliably indicates grid online**
+4. Trigger "early power return" notification when transitioning from offline/unknown to online
 
-See `docs/ecoflow-developer-api.md` for full implementation details.
+**Limitations:**
+- Cannot detect offline transitions reliably
+- Status remains "unknown" until f1.f1=2 is received
+- No immediate status on startup
+
+**Why this is the best we can do:**
+The RIVER 3 protocol differs significantly from older EcoFlow devices. No field reliably indicates AC disconnection. The f1.f1=2 (AC charging) is the only proven indicator, and it only works when the battery is actively charging.
 
 ---
 
@@ -204,4 +227,5 @@ See `docs/ecoflow-developer-api.md` for full implementation details.
 | `57117f2` | Add early/emergency offline notifications |
 | `f10a9d2` | Fix offline notification to trigger from unknown state |
 | `79cd893` | Disable offline notifications - f2.f4 unreliable |
-| Jan 16, 2026 | **✅ Working solution** - ioBroker approach with latestQuotas request |
+| Jan 16, 2026 | ioBroker approach with latestQuotas (later found unreliable) |
+| Jan 17, 2026 | **Rollback** - Simple f1.f1=2 detection only, offline disabled |
