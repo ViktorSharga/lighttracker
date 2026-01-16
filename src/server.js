@@ -60,7 +60,8 @@ function handleGridOnline() {
     return;
   }
 
-  const { current: schedule } = getLatestSchedules();
+  // Use preferToday=true to get today's schedule, not tomorrow's
+  const { current: schedule } = getLatestSchedules(null, true);
   if (!schedule || !schedule.groups[ECOFLOW_GROUP]) {
     console.log(`[EcoFlow] No schedule data for group ${ECOFLOW_GROUP}`);
     return;
@@ -90,7 +91,8 @@ function handleGridOffline() {
     return;
   }
 
-  const { current: schedule } = getLatestSchedules();
+  // Use preferToday=true to get today's schedule, not tomorrow's
+  const { current: schedule, dateKey } = getLatestSchedules(null, true);
   if (!schedule || !schedule.groups[ECOFLOW_GROUP]) {
     console.log(`[EcoFlow] No schedule data for group ${ECOFLOW_GROUP}`);
     return;
@@ -98,6 +100,7 @@ function handleGridOffline() {
 
   const groupData = schedule.groups[ECOFLOW_GROUP];
   const currentTime = getCurrentTime();
+  console.log(`[EcoFlow] Checking offline at ${currentTime} against schedule for ${dateKey}, intervals: ${groupData.intervalsText}`);
 
   const toMinutes = (t) => {
     const [h, m] = t.split(':').map(Number);
