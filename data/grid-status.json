@@ -1167,6 +1167,30 @@
         "dateKey": "2026-01-16",
         "fetchedAt": "2026-01-16T14:55:57.116Z"
       }
+    },
+    {
+      "timestamp": "2026-01-16T18:14:37.048Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-17",
+        "fetchedAt": "2026-01-16T16:31:22.625Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T18:15:24.925Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-17",
+        "fetchedAt": "2026-01-16T16:31:22.625Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T18:17:21.430Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-17",
+        "fetchedAt": "2026-01-16T16:31:22.625Z"
+      }
     }
   ]
 }

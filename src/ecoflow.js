@@ -271,7 +271,8 @@ async function connectMQTT(credentials) {
         // Request device status immediately
         requestDeviceStatus();
 
-        // Set up periodic polling every 5 minutes (like ioBroker does)
+        // Periodic polling every 5 minutes (get_reply is rate-limited by EcoFlow)
+        // Real-time detection uses HeartbeatPack f1.f1 field
         if (pollInterval) clearInterval(pollInterval);
         pollInterval = setInterval(() => {
           if (isConnected) {
@@ -791,14 +792,34 @@ function extractGridStatus(data, header) {
   }
 
   // ============================================================================
-  // PRIORITY 4 (FALLBACK): HeartbeatPack - UNRELIABLE, only log for debugging
+  // HeartbeatPack - Use f1.f1=2 to confirm online, but f1.f1=1 is ambiguous
+  // f1.f1: 1 = battery mode (not charging), 2 = AC charging
+  // PROBLEM: f1.f1=1 when battery is full even if AC is connected
+  // SOLUTION: f1.f1=2 reliably indicates AC charging (grid online)
+  //           f1.f1=1 could mean offline OR full battery - don't change status
   // ============================================================================
   if (header.cmdFunc === MSG_TYPES.HEARTBEAT_PACK.cmdFunc &&
       header.cmdId === MSG_TYPES.HEARTBEAT_PACK.cmdId) {
+    const powerSource = allFields['f1.f1'];
+    const acState = allFields['f2.f4'];
+    const batterySoc = allFields['f1.f9'];
+
     if (DEBUG_ECOFLOW) {
-      const acState = allFields['f2.f4'];
-      const powerSource = allFields['f1.f1'];
-      console.log(`[EcoFlow DEBUG] HeartbeatPack: f2.f4=${acState}, f1.f1=${powerSource} (not used for status)`);
+      console.log(`[EcoFlow DEBUG] HeartbeatPack: f1.f1=${powerSource}, f2.f4=${acState}, battery=${batterySoc}%`);
+    }
+
+    // f1.f1=2 means actively charging from AC - definitely online
+    if (powerSource === 2) {
+      updateGridStatus('online', `heartbeat.power_source=2 (AC charging)`);
+      return;
+    }
+
+    // f1.f1=1 is ambiguous - could be offline OR battery full with AC connected
+    // Only mark offline if battery is significantly draining (< 95%)
+    // This avoids false offline when battery is full and AC is connected
+    if (powerSource === 1 && batterySoc < 95) {
+      updateGridStatus('offline', `heartbeat.power_source=1, battery=${batterySoc}%`);
+      return;
     }
   }
 
