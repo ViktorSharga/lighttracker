@@ -551,17 +551,16 @@ function processGetReply(payload) {
 
   if (DEBUG_ECOFLOW) {
     const keys = Object.keys(data);
-    console.log(`[EcoFlow DEBUG] get_reply decoded (${keys.length} fields)`);
-
-    // Look for AC-related field numbers
-    const acFieldKeys = keys.filter(k => {
-      const fieldNum = k.match(/f(\d+)/)?.[1];
-      return fieldNum && [47, 54, 61, 202].includes(parseInt(fieldNum));
-    });
-    if (acFieldKeys.length > 0) {
-      console.log('[EcoFlow DEBUG] Potential AC fields:', acFieldKeys.join(', '));
-      for (const key of acFieldKeys) {
-        console.log(`[EcoFlow DEBUG]   ${key}: ${data[key]}`);
+    console.log(`[EcoFlow DEBUG] get_reply raw decoded (${keys.length} fields):`);
+    // Show all raw fields
+    for (const key of keys.slice(0, 10)) {
+      const val = data[key];
+      if (Buffer.isBuffer(val)) {
+        console.log(`[EcoFlow DEBUG]   ${key}: <Buffer ${val.length} bytes, first: ${val.slice(0, 20).toString('hex')}>`);
+      } else if (typeof val === 'object') {
+        console.log(`[EcoFlow DEBUG]   ${key}: <Object with ${Object.keys(val).length} keys>`);
+      } else {
+        console.log(`[EcoFlow DEBUG]   ${key}: ${val}`);
       }
     }
   }
@@ -569,31 +568,56 @@ function processGetReply(payload) {
   // The data should contain DisplayPropertyUpload fields directly or nested
   const allFields = flattenNumericFields(data);
 
-  // Check for AC input flag (field 61 in DisplayPropertyUpload)
-  const acInFlag = findField(allFields, DISPLAY_FIELDS.PLUG_IN_INFO_AC_IN_FLAG);
-  if (acInFlag !== null && (acInFlag === 0 || acInFlag === 1)) {
-    updateGridStatus(acInFlag === 1 ? 'online' : 'offline', `get_reply.plug_in_info_ac_in_flag=${acInFlag}`);
-    return;
+  if (DEBUG_ECOFLOW) {
+    const flatKeys = Object.keys(allFields);
+    console.log(`[EcoFlow DEBUG] get_reply flattened (${flatKeys.length} fields):`);
+    // Show first 30 flattened fields
+    for (const key of flatKeys.slice(0, 30)) {
+      console.log(`[EcoFlow DEBUG]   ${key}: ${allFields[key]}`);
+    }
+    // Look for AC-related field numbers
+    const acFieldKeys = flatKeys.filter(k => {
+      const fieldNum = k.match(/f(\d+)/)?.[1];
+      return fieldNum && [47, 54, 61, 202].includes(parseInt(fieldNum));
+    });
+    if (acFieldKeys.length > 0) {
+      console.log('[EcoFlow DEBUG] Potential AC fields found:', acFieldKeys.join(', '));
+      for (const key of acFieldKeys) {
+        console.log(`[EcoFlow DEBUG]   >>> ${key}: ${allFields[key]}`);
+      }
+    }
   }
 
-  // Check for AC input power (field 54)
-  const acPower = findField(allFields, DISPLAY_FIELDS.POW_GET_AC_IN);
-  if (acPower !== null && typeof acPower === 'number') {
-    updateGridStatus(acPower > 0 ? 'online' : 'offline', `get_reply.pow_get_ac_in=${acPower}W`);
-    return;
-  }
-
-  // Check for flow info AC in (field 47)
+  // PRIORITY 1: Check flow_info_ac_in (field 47) - most reliable for RIVER 3
+  // Values: 0=off, 2=on (AC input switch status)
   const flowAcIn = findField(allFields, DISPLAY_FIELDS.FLOW_INFO_AC_IN);
   if (flowAcIn !== null && (flowAcIn === 0 || flowAcIn === 2)) {
     updateGridStatus(flowAcIn === 2 ? 'online' : 'offline', `get_reply.flow_info_ac_in=${flowAcIn}`);
     return;
   }
 
-  // Check for charger flag (field 202)
+  // PRIORITY 2: Check pow_get_ac_in (field 54) - AC input power
+  // If power > 0, AC is connected
+  const acPower = findField(allFields, DISPLAY_FIELDS.POW_GET_AC_IN);
+  if (acPower !== null && typeof acPower === 'number') {
+    // Use threshold of 1W to avoid noise
+    updateGridStatus(acPower > 1 ? 'online' : 'offline', `get_reply.pow_get_ac_in=${acPower.toFixed(1)}W`);
+    return;
+  }
+
+  // PRIORITY 3: Check charger flag (field 202)
   const chargerFlag = findField(allFields, DISPLAY_FIELDS.PLUG_IN_INFO_AC_CHARGER_FLAG);
   if (chargerFlag !== null && (chargerFlag === 0 || chargerFlag === 1)) {
     updateGridStatus(chargerFlag === 1 ? 'online' : 'offline', `get_reply.plug_in_info_ac_charger_flag=${chargerFlag}`);
+    return;
+  }
+
+  // PRIORITY 4: plug_in_info_ac_in_flag (field 61) - UNRELIABLE for RIVER 3
+  // This field shows 0 even when AC is connected, so only use as last resort
+  // and prefer "online" if other evidence exists
+  const acInFlag = findField(allFields, DISPLAY_FIELDS.PLUG_IN_INFO_AC_IN_FLAG);
+  if (acInFlag !== null && (acInFlag === 0 || acInFlag === 1)) {
+    updateGridStatus(acInFlag === 1 ? 'online' : 'offline', `get_reply.plug_in_info_ac_in_flag=${acInFlag}`);
     return;
   }
 

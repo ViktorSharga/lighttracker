@@ -1,0 +1,1172 @@
+{
+  "history": [
+    {
+      "timestamp": "2026-01-13T16:04:36.490Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T16:21:34.785Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T16:24:14.531Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T16:32:53.720Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:07:50.189Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:11:19.782Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:12:29.735Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:17:49.301Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:18:29.249Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:20:49.121Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:21:59.048Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:27:08.706Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:28:08.733Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:28:28.608Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:28:38.727Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:28:48.662Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:28:58.593Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:29:58.494Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T17:57:16.595Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T18:03:46.202Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-13",
+        "fetchedAt": "2026-01-13T15:07:48.392Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T19:07:22.308Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T19:54:49.332Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T20:27:17.381Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T20:29:17.284Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T23:45:14.773Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-13T23:54:14.227Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T00:03:23.794Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T00:12:33.347Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T00:20:23.132Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T00:29:32.777Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T00:31:22.704Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T02:14:17.232Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T02:16:07.104Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T04:12:49.710Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T04:13:39.205Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T04:31:18.485Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T04:39:37.895Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T04:48:47.280Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T04:57:46.637Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T04:58:36.036Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T05:16:05.269Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T05:25:14.618Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T05:34:13.851Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T05:35:00.507Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T05:48:02.893Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T05:57:12.188Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T05:57:51.569Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T06:15:20.844Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T06:16:10.347Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T06:33:39.540Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T06:34:14.120Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T06:50:48.250Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T06:52:58.563Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T07:10:56.670Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T07:18:16.027Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T07:27:45.338Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T07:36:44.828Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-13T18:33:44.499Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T07:37:27.703Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:37:21.386Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:20:51.905Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:23:12.041Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:28:51.579Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:30:51.634Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:36:41.306Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:38:41.224Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:44:41.053Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:46:31.037Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:52:40.908Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T08:54:30.787Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:00:50.701Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:02:40.580Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:08:50.546Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:10:50.466Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:18:00.305Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:19:50.222Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:30:59.830Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:32:39.774Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:48:29.064Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T09:50:08.983Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T10:35:56.576Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T10:37:56.483Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T10:44:36.167Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T10:46:26.154Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T10:55:45.772Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T10:57:25.721Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T11:27:44.530Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T07:52:27.848Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T15:04:28.118Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T14:57:43.812Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T15:22:06.941Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T14:57:43.812Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T15:46:05.670Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T14:57:43.812Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T15:47:55.656Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T14:57:43.812Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T16:07:44.538Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T15:57:44.076Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T16:09:34.412Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T15:57:44.076Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T16:33:53.148Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T15:57:44.076Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T16:35:33.111Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-14",
+        "fetchedAt": "2026-01-14T15:57:44.076Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T17:01:21.476Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T17:03:01.312Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T17:27:59.642Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T17:29:39.598Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T17:55:48.043Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T17:57:27.826Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T18:21:06.403Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T18:22:46.339Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T18:48:24.447Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T18:50:14.343Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T19:15:12.829Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T19:17:02.739Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T19:42:51.028Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T19:44:30.967Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T20:09:29.220Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-14T20:11:09.192Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-14T16:37:44.103Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T06:51:28.833Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T06:22:45.480Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T06:54:08.633Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T06:22:45.480Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T14:54:52.853Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T14:47:46.250Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T15:29:20.843Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T14:47:46.250Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T15:54:29.809Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T14:47:46.250Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T15:56:19.671Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T14:47:46.250Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T16:20:18.715Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T15:57:46.405Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T16:22:08.688Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T15:57:46.405Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T16:33:28.366Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T15:57:46.405Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T16:43:27.825Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T15:57:46.405Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T16:45:17.691Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T15:57:46.405Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T17:06:56.863Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T15:57:46.405Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T17:08:46.809Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T15:57:46.405Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T18:00:23.885Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T15:57:46.405Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T18:02:03.722Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-15",
+        "fetchedAt": "2026-01-15T15:57:46.405Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T19:03:58.566Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T19:05:38.447Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T19:05:48.340Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T19:38:05.385Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T19:39:45.142Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T20:52:10.713Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T20:54:00.585Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T22:48:34.227Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T22:53:43.983Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-15T22:59:13.716Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T01:08:18.065Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T01:10:17.997Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T04:45:48.152Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T04:54:47.774Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T07:05:31.322Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T07:07:31.232Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-15T18:57:47.493Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T13:58:58.301Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-16T13:50:57.120Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T14:31:36.811Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-16T13:50:57.120Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T15:56:56.108Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-16T14:55:57.116Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T15:58:32.622Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-16T14:55:57.116Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T16:05:19.305Z",
+      "status": "offline",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-16T14:55:57.116Z"
+      }
+    },
+    {
+      "timestamp": "2026-01-16T16:06:15.168Z",
+      "status": "online",
+      "scheduleRef": {
+        "dateKey": "2026-01-16",
+        "fetchedAt": "2026-01-16T14:55:57.116Z"
+      }
+    }
+  ]
+}
