@@ -380,9 +380,10 @@ function updateGridStatus(newStatus, source) {
 
     gridStatus = newStatus;
 
-    // Trigger callback when power comes back online (from offline state)
+    // Trigger callback when power comes back online (from offline or unknown state)
     // This is the ONLY transition we detect reliably (f1.f1=2)
-    if (newStatus === 'online' && previousStatus === 'offline' && onGridOnlineCallback) {
+    // Include 'unknown' because after restart we don't know if power was off
+    if (newStatus === 'online' && (previousStatus === 'offline' || previousStatus === 'unknown') && onGridOnlineCallback) {
       try {
         onGridOnlineCallback();
       } catch (err) {
