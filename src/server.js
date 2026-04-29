@@ -15,7 +15,7 @@ const ALL_GROUPS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2', '5.1
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const FETCH_INTERVAL_MS = parseInt(process.env.FETCH_INTERVAL_MS) || 300000; // 5 minutes
+const FETCH_INTERVAL_MS = parseInt(process.env.FETCH_INTERVAL_MS) || 21600000; // 6 hours (4x/day)
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 // Read version
