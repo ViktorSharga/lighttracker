@@ -41,6 +41,21 @@ function isTimeInInterval(timeStr, interval) {
   return now >= start && now < end;
 }
 
+// Morning brief hour (Kyiv): the auto "no outages" new-day message is held until then
+const DAILY_BRIEF_HOUR = 8;
+
+// Helper: Date/time parts in Ukraine timezone (server runs UTC)
+function getKyivParts(date = new Date()) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Kyiv',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(date).map(p => [p.type, p.value])
+  );
+  return { year: parts.year, month: parts.month, day: parts.day, hour: Number(parts.hour) };
+}
+
 // Helper: Get current time as HH:MM in Ukraine timezone
 function getCurrentTime() {
   const now = new Date();
@@ -575,8 +590,11 @@ async function ensureTodayHasSchedule(todayKey, todayScheduleDate, results = [])
   if (result.added) {
     console.log(`  - ${todayScheduleDate}: added=${result.added}, isNewDay=${result.isNewDay}, isNoOutages=true`);
 
-    // Notify subscribers about the no-outages day
-    if (TELEGRAM_BOT_TOKEN) {
+    // Notify subscribers about the no-outages day; before the morning brief hour it's held
+    // and sent by sendHeldDailyBrief() instead
+    if (getKyivParts().hour < DAILY_BRIEF_HOUR) {
+      console.log(`  - holding no-outages brief until ${DAILY_BRIEF_HOUR}:00 Kyiv`);
+    } else if (TELEGRAM_BOT_TOKEN) {
       const { current: newSchedule } = getLatestSchedules(result.dateKey);
       notifySubscribers(prevSchedule, newSchedule, result.isNewDay).catch(err => {
         console.error('Error notifying subscribers about no-outages schedule:', err);
@@ -602,12 +620,9 @@ function getDateKey(scheduleDate) {
   return `${year}-${month}-${day}`;
 }
 
-// Get today's date in both formats used by the app
+// Get today's (Kyiv) date in both formats used by the app
 function getTodayDates() {
-  const now = new Date();
-  const day = String(now.getDate()).padStart(2, '0');
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const year = now.getFullYear();
+  const { year, month, day } = getKyivParts();
 
   return {
     dateKey: `${year}-${month}-${day}`,        // YYYY-MM-DD (storage key)
@@ -632,6 +647,41 @@ function createNoOutagesSchedule(scheduleDate) {
     groups,
     isNoOutagesSchedule: true  // Flag to identify auto-generated schedules
   };
+}
+
+// Send the morning brief if today's only schedule is an auto no-outages one created before
+// DAILY_BRIEF_HOUR (its notification was held). Real LOE schedules notify immediately.
+async function sendHeldDailyBrief() {
+  const { dateKey: todayKey, scheduleDate: todayScheduleDate } = getTodayDates();
+  const todaySchedules = getSchedulesForDate(todayKey);
+
+  if (todaySchedules.length === 0) {
+    // No fetch has stored today yet; past the brief hour this creates and notifies
+    await ensureTodayHasSchedule(todayKey, todayScheduleDate);
+    return;
+  }
+
+  const [only] = todaySchedules;
+  const wasHeld = todaySchedules.length === 1 && only.isNoOutagesSchedule &&
+    getKyivParts(new Date(only.fetchedAt)).hour < DAILY_BRIEF_HOUR;
+
+  if (wasHeld && TELEGRAM_BOT_TOKEN) {
+    console.log(`[${new Date().toISOString()}] Sending held morning brief for ${todayKey}`);
+    await notifySubscribers(null, only, true);
+  }
+}
+
+// Check once a minute; fires once per day at the first check at/after DAILY_BRIEF_HOUR
+function startDailyBriefTimer() {
+  // After a restart past the brief hour, today's brief already went out (or wasn't held)
+  let lastBriefDate = getKyivParts().hour >= DAILY_BRIEF_HOUR ? getTodayDates().dateKey : null;
+
+  setInterval(() => {
+    const { dateKey: todayKey } = getTodayDates();
+    if (lastBriefDate === todayKey || getKyivParts().hour < DAILY_BRIEF_HOUR) return;
+    lastBriefDate = todayKey;
+    sendHeldDailyBrief().catch(err => console.error('Error sending morning brief:', err));
+  }, 60 * 1000);
 }
 
 // Start periodic fetching
@@ -673,4 +723,5 @@ app.listen(PORT, async () => {
   await initEcoFlow(getLatestSchedules, handleGridOnline, handleGridOffline);
 
   startPeriodicFetch();
+  startDailyBriefTimer();
 });

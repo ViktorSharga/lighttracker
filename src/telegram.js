@@ -25,13 +25,16 @@ function formatTimestamp(timestamp) {
     return timestamp; // Return original if parsing fails
   }
 
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
+  // Server runs UTC; subscribers read Kyiv time
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Kyiv',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(date).map(part => [part.type, part.value])
+  );
 
-  return `${hours}:${minutes} ${day}.${month}.${year}`;
+  return `${p.hour}:${p.minute} ${p.day}.${p.month}.${p.year}`;
 }
 
 let bot = null;
