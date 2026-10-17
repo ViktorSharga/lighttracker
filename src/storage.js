@@ -99,7 +99,8 @@ function addSchedule(schedule) {
     fetchedAt: new Date().toISOString(),
     scheduleDate: schedule.scheduleDate,
     infoTimestamp: schedule.infoTimestamp,
-    groups: schedule.groups
+    groups: schedule.groups,
+    ...(schedule.isNoOutagesSchedule && { isNoOutagesSchedule: true })
   };
 
   schedules[dateKey].push(record);
