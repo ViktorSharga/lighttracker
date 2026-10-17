@@ -20,7 +20,7 @@ async function fetchSchedulePage() {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--single-process',
+        // No --single-process: Debian 12.13's Chromium crashes on launch with it
         '--no-zygote',
         '--disable-extensions',
         '--disable-background-networking',
