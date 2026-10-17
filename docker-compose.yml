@@ -1,6 +1,8 @@
 services:
   lighttracker:
     build: .
+    # Puppeteer's Chrome has no linux-arm64 build; match Railway (amd64) on Apple Silicon
+    platform: linux/amd64
     container_name: lighttracker
     ports:
       - "3000:3000"
